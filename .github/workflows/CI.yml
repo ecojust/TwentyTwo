@@ -1,0 +1,99 @@
+name: Build and release
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  release:
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+      deployments: write
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "windows-latest"
+            args: ""
+          - platform: "macos-latest" # for Arm based macs (M1 and above).
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest" # for Intel based macs.
+            args: "--target x86_64-apple-darwin"
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Rust setup
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+
+      # Rust cache
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      # Sync node version and setup cache
+      - name: Sync node version and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      # Install pnpm globally
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # Install frontend dependencies
+      - name: Install frontend dependencies
+        run: pnpm install
+
+        # Install frontend dependencies
+      - name: Install x86 Apple
+        run: rustup target add x86_64-apple-darwin
+
+      # 获取当前日期和运行ID作为序号
+      - name: Get date and run number
+        id: date_run
+        shell: bash
+        run: |
+          echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+          echo "number=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          # 修改为符合semver的版本格式：主版本.次版本.修订版本
+          echo "bundle_version=alpha.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      # 修改 tauri.conf.json 文件
+      - name: Update tauri.conf.json
+        shell: bash
+        run: |
+          # 读取当前配置
+          CONFIG_FILE="src-tauri/tauri.conf.json"
+          # 使用 Node.js 更新 version
+          node -e "
+            const fs = require('fs');
+            const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
+            config.version += '-${{ steps.date_run.outputs.bundle_version }}';
+            fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
+          "
+          # 显示更新后的配置
+          cat $CONFIG_FILE | grep version
+
+      # Build the app
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: "v__VERSION__-${{ steps.date_run.outputs.date }}-${{ steps.date_run.outputs.number }}"
+          releaseName: "FocusChat v__VERSION__ (${{ steps.date_run.outputs.date }}#${{ steps.date_run.outputs.number }})"
+          releaseBody: "自动构建发布于 ${{ steps.date_run.outputs.date }}，序号 #${{ steps.date_run.outputs.number }}"
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
