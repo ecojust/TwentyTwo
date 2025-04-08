@@ -68,6 +68,10 @@ jobs:
           echo "number=${{ github.run_number }}" >> $GITHUB_OUTPUT
           # 修改为符合semver的版本格式：主版本.次版本.修订版本
           echo "bundle_version=alpha.${{ github.run_number }}" >> $GITHUB_OUTPUT
+          # 获取最近一次提交的信息
+          echo "commit_message=$(git log -1 --pretty=%B | head -n 1)" >> $GITHUB_OUTPUT
+          # 获取短版本的commit SHA
+          echo "commit_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       # 修改 tauri.conf.json 文件
       - name: Update tauri.conf.json
@@ -92,8 +96,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: "v__VERSION__-${{ steps.date_run.outputs.date }}-${{ steps.date_run.outputs.number }}"
-          releaseName: "FocusChat v__VERSION__ (${{ steps.date_run.outputs.date }}#${{ steps.date_run.outputs.number }})"
-          releaseBody: "自动构建发布于 ${{ steps.date_run.outputs.date }}，序号 #${{ steps.date_run.outputs.number }}"
+          releaseName: "VideoSearch-__VERSION__ (${{ steps.date_run.outputs.date }}#${{ steps.date_run.outputs.number }})"
+          releaseBody: |
+            提交ID: ${{ steps.date_run.outputs.commit_sha }}
+            提交信息: ${{ steps.date_run.outputs.commit_message }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
