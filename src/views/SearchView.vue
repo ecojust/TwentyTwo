@@ -55,7 +55,11 @@
           :md="8"
           :lg="6"
         >
-          <el-card class="video-card" :body-style="{ padding: '0px' }" shadow="hover">
+          <el-card
+            class="video-card"
+            :body-style="{ padding: '0px' }"
+            shadow="hover"
+          >
             <div class="video-thumbnail">
               <el-image
                 :src="result.thumbnail || '/placeholder.jpg'"
@@ -97,10 +101,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
+import { invoke } from "@tauri-apps/api/core";
 
 const router = useRouter();
 const pluginsStore = usePluginsStore();
@@ -166,6 +171,13 @@ function playVideo(video) {
 function addToFavorites(video) {
   favoritesStore.addFavorite(video);
 }
+
+onMounted(async () => {
+  var vvalue = await invoke("fetch_url", {
+    url: "https://www.baidu.com",
+  });
+  console.log(vvalue);
+});
 </script>
 
 <style scoped>
