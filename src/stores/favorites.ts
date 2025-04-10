@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { ElMessage } from "element-plus";
 
 interface FavoriteItem {
   id: string;
@@ -8,6 +9,7 @@ interface FavoriteItem {
   type: "local" | "plugin";
   thumbnail?: string;
   path?: string;
+  href: string;
 }
 
 export const useFavoritesStore = defineStore("favorites", () => {
@@ -29,14 +31,19 @@ export const useFavoritesStore = defineStore("favorites", () => {
   // 保存收藏到本地存储
   const saveFavorites = () => {
     localStorage.setItem("video-favorites", JSON.stringify(favorites.value));
+    ElMessage.success("收藏成功");
   };
 
   // 添加收藏
   const addFavorite = (item: FavoriteItem) => {
-    if (!isFavorite(item.id)) {
+    if (!isFavorite(item.href)) {
       favorites.value.push(item);
       saveFavorites();
+    } else {
+      ElMessage.warning("已收藏");
     }
+
+    console.log("收藏列表:", favorites.value);
   };
 
   // 移除收藏
@@ -49,8 +56,8 @@ export const useFavoritesStore = defineStore("favorites", () => {
   };
 
   // 检查是否已收藏
-  const isFavorite = (id: string) => {
-    return favorites.value.some((item) => item.id === id);
+  const isFavorite = (href: string) => {
+    return favorites.value.some((item) => item.href === href);
   };
 
   // 初始化时加载收藏

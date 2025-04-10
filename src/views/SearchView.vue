@@ -69,7 +69,8 @@
             </div>
             <div class="video-info">
               <h3>{{ result.title }}</h3>
-              <el-tag size="small" effect="light">{{ result.source }}</el-tag>
+              <el-tag size="small" effect="light">{{ result.score }}</el-tag>
+              <span>{{ result.text }}</span>
               <div class="video-actions">
                 <el-button
                   @click="playVideo(result)"
@@ -97,6 +98,8 @@
         <el-skeleton :rows="5" animated />
       </div>
     </el-card>
+
+    <div class="html">{{ hhtml }}</div>
   </div>
 </template>
 
@@ -106,16 +109,19 @@ import { useRouter } from "vue-router";
 import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
 import { invoke } from "@tauri-apps/api/core";
+import Plugin from "../tool/plugin";
 
 const router = useRouter();
 const pluginsStore = usePluginsStore();
 const favoritesStore = useFavoritesStore();
 
 // 搜索状态
-const searchQuery = ref("");
+const searchQuery = ref("成龙");
 const isSearching = ref(false);
 const hasSearched = ref(false);
 const searchResults = ref([]);
+
+const hhtml = ref("");
 
 // 插件选择
 const activePlugins = computed(() => pluginsStore.activePlugins);
@@ -135,16 +141,18 @@ async function searchVideos() {
 
   try {
     // 从每个选中的插件中搜索
-    const searchPromises = selectedPlugins.value.map((pluginId) => {
-      const plugin = activePlugins.value.find((p) => p.id === pluginId);
-      if (!plugin) return Promise.resolve([]);
+    // const searchPromises = selectedPlugins.value.map((pluginId) => {
+    //   const plugin = activePlugins.value.find((p) => p.id === pluginId);
+    //   if (!plugin) return Promise.resolve([]);
 
-      // 这里应该调用插件的搜索方法
-      return pluginsStore.searchWithPlugin(pluginId, searchQuery.value);
-    });
+    //   // 这里应该调用插件的搜索方法
+    //   return pluginsStore.searchWithPlugin(pluginId, searchQuery.value);
+    // });
 
-    const results = await Promise.all(searchPromises);
-    searchResults.value = results.flat();
+    const res = await Plugin.search(searchQuery.value);
+    if (res.success) {
+      searchResults.value = res.data;
+    }
   } catch (error) {
     console.error("搜索出错:", error);
   } finally {
@@ -154,17 +162,23 @@ async function searchVideos() {
 }
 
 // 播放视频
-function playVideo(video) {
-  router.push({
-    name: "player",
-    params: {
-      source: video.source,
-      id: video.id,
-    },
-    query: {
-      title: video.title,
-    },
-  });
+async function playVideo(video) {
+  // router.push({
+  //   name: "player",
+  //   params: {
+  //     source: video.source,
+  //     id: video.id,
+  //   },
+  //   query: {
+  //     title: video.title,
+  //   },
+  // });
+
+  const res = await Plugin.play(video.href);
+  if (res.success) {
+    const videoURL = res.data;
+    console.log(videoURL);
+  }
 }
 
 // 添加到收藏
@@ -173,10 +187,12 @@ function addToFavorites(video) {
 }
 
 onMounted(async () => {
-  var vvalue = await invoke("fetch_url", {
-    url: "https://www.baidu.com",
+  Plugin.setPlugin({
+    search: {
+      url: "https://www.x139.cn/search.php?searchword={keyword}",
+      description: "x139搜索",
+    },
   });
-  console.log(vvalue);
 });
 </script>
 
