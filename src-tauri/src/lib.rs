@@ -23,6 +23,16 @@ async fn fetch_url(url: String) -> Result<Ret, String> {
         Ok(browser) => {
             match browser.new_tab() {
                 Ok(tab) => {
+                    // 设置自定义 User-Agent
+                    let user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+                    if let Err(e) = tab.set_user_agent(user_agent, None, None) {
+                        return Ok(Ret {
+                            success: false,
+                            message: Some(format!("设置User-Agent失败: {}", e)),
+                            data: None,
+                        });
+                    }
+
                     if let Err(e) = tab.navigate_to(&url) {
                         return Ok(Ret {
                             success: false,

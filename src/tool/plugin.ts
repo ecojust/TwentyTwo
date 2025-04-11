@@ -33,29 +33,36 @@ const pluginTemplate = {
       return listItems;
     },
   },
-  play: {
+  detail: {
     direct: false,
-    type: "m3u8",
     description: "需要进一步解析网页获取真实地址",
     parse: function (html: string) {
-      // 使用正则表达式匹配以.m3u8结尾的URL
-      //   const m3u8Regex = /(https?:\/\/[^\s"']+\.m3u8)/g;
-      //   const matches = html.match(m3u8Regex);
-
-      //   // 如果找到匹配项，返回第一个匹配的m3u8链接
-      //   const m3u8Url = matches ? matches[0] : null;
-
-      //   console.log("找到的m3u8链接:", m3u8Url);
-
-      //   return html;
-      // 使用 Cheerio 加载 HTML 内容
       const $ = cheerio.load(html);
-      const listItems = $("script")
-        .map((index, element) => {
-          return $(element).text();
-        })
-        .get();
-      return listItems;
+      const firstPlayBtn = $(".hl-play-btn").eq(0);
+      const playurl = firstPlayBtn.attr("href");
+      return "https://www.x139.cn" + playurl;
+    },
+  },
+  play: {
+    description: "播放页面，获取真实播放地址",
+    mediaType: "m3u8",
+    parse: function (html: string) {
+      // 使用正则表达式匹配以.m3u8结尾的URL
+      const m3u8Regex = /(https?:\/\/[^\s"']+\.m3u8)/g;
+      const matches = html.match(m3u8Regex);
+
+      // 如果找到匹配项，返回第一个匹配的m3u8链接
+      if (matches && matches.length > 0) {
+        console.log("找到m3u8链接:", matches[0]);
+        return matches[0];
+      }
+
+      // 如果没有找到匹配项，尝试使用cheerio解析
+      const $ = cheerio.load(html);
+      // 可以在这里添加其他解析逻辑，如果需要的话
+
+      console.log("未找到m3u8链接");
+      return null;
     },
   },
 };
@@ -104,27 +111,32 @@ export default class Plugin {
     };
   }
 
-  static async play(url: string) {
-    if (pluginTemplate.play.direct) {
-      return {
-        success: true,
-        message: "直接播放",
-        data: url,
-        type: pluginTemplate.play.type,
-      };
+  static async getPlayUrl(detail_url: string) {
+    console.log("开始解析", detail_url);
+    let play_url = "",
+      res = {} as IResult;
+    if (pluginTemplate.detail.direct) {
+      play_url = detail_url;
+    } else {
+      res = (await this._fetchIPC(detail_url)) as IResult;
+      if (!res.success) {
+        return res;
+      }
+      const html = res.data;
+      play_url = pluginTemplate.detail.parse(html);
     }
 
-    const res = (await this._fetchIPC(url)) as IResult;
+    res = (await this._fetchIPC(play_url as string)) as IResult;
     if (!res.success) {
       return res;
     }
-    const html = res.data;
-    const videoURL = pluginTemplate.play.parse(html);
+    const video_url = pluginTemplate.play.parse(res.data);
+
     return {
       success: true,
       message: "解析成功",
-      data: videoURL,
-      type: pluginTemplate.play.type,
+      data: video_url,
+      type: pluginTemplate.play.mediaType,
     };
   }
 }

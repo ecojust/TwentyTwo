@@ -174,7 +174,7 @@ async function playVideo(video) {
   //   },
   // });
 
-  const res = await Plugin.play(video.href);
+  const res = await Plugin.getPlayUrl(video.href);
   if (res.success) {
     const videoURL = res.data;
     console.log(videoURL);
