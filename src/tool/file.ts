@@ -107,10 +107,10 @@ export default class File {
       const prePath = file.split("/").slice(0, -1).join("/");
 
       if (prePath) {
-        await mkdir(prePath, {
-          recursive: true,
-        });
+        await this._readDir(prePath);
       }
+      console.log("写入文件", file, new TextEncoder().encode(content));
+
       await writeFile(file, new TextEncoder().encode(content), {
         baseDir: BaseDirectory.Resource,
       });

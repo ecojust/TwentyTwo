@@ -72,6 +72,7 @@
               </div>
 
               <div class="plugin-actions">
+                <span>{{ plugin.file_name }}</span>
                 <!-- <el-button
                   @click="setPlugin(plugin)"
                   :type="plugin.active ? 'warning' : 'success'"

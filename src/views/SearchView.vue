@@ -178,6 +178,9 @@ async function playVideo(video) {
     if (res.success) {
       video.play_url = res.data;
       video.type = res.type;
+    } else {
+      status.value = "获取播放链接失败：" + res.message;
+      return;
     }
   }
   await File.pushHistory(video);
@@ -279,7 +282,7 @@ onMounted(async () => {
 
 .player-dialog {
   position: relative;
-  
+
   .el-dialog__header {
     position: absolute;
     top: 0;
@@ -287,12 +290,12 @@ onMounted(async () => {
     width: calc(100% - 40px);
     z-index: 90;
     padding: 20px !important;
-    
+
     button {
       i {
         transition: all 0.3s;
         font-weight: 900;
-        
+
         &:hover {
           filter: drop-shadow(0 0 20px #24c8db);
           transform: scale(1.5);
@@ -300,10 +303,10 @@ onMounted(async () => {
       }
     }
   }
-  
+
   .el-dialog__body {
     height: 100%;
-    
+
     .player-container {
       height: 100%;
     }

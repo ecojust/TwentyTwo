@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import File from "../tool/file";
+import Generater from "../tool/generater";
+
 import { IPlugin, IResult } from "../const/interface";
 import { invoke } from "@tauri-apps/api/core";
 import { ElMessage } from "element-plus";
@@ -32,21 +34,29 @@ export const usePluginsStore = defineStore("plugins", () => {
   // 从URL导入插件
   const importPluginFromUrl = async (url: string) => {
     try {
-      const response = (await invoke("fetch_url", {
+      // 基本调用
+      const response = (await invoke("http_get", {
         url: url,
       })) as IResult;
+
+      console.log("response", response);
       if (!response.success) {
         throw new Error(`请求失败: ${response.data}`);
       }
 
-      const pluginName = url.split("/").pop();
-      if (!pluginName) {
-        throw new Error("无法获取插件名称");
-      }
+      const pluginName = Generater.generatePluginName(url);
 
-      await File.pushPlugin(pluginName!, response.data);
+      console.log("pluginName", pluginName);
+
+      // const existingPlugin = plugins.value.find(
+      //   (plugin) => plugin.file_name === pluginName
+      // );
+      // if (existingPlugin) {
+      //   throw new Error("插件已存在");
+      // }
+      await File.pushPlugin(pluginName, response.data);
       await loadPlugins();
-      ElMessage.success("导入插件成功");
+      ElMessage.success(`导入插件成功:${pluginName}`);
     } catch (error) {
       console.error("导入插件失败:", error);
       ElMessage.error("导入插件失败");
