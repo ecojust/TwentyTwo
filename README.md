@@ -1,6 +1,6 @@
 # VideoSearch
 
-VideoSearch 是一款跨平台的视频搜索和管理工具，支持本地视频播放和在线视频搜索。
+VideoSearch 是一款跨平台的视频搜索和管理工具。与软件相关的交流与探讨请点击传送门：[ Video Search](https://pd.qq.com/g/pd74066781)
 
 ## 功能特点
 
