@@ -1,41 +1,7 @@
 <template>
   <div class="app-container">
-    <el-menu
-      mode="horizontal"
-      router
-      class="main-menu"
-      :ellipsis="false"
-      background-color="#ffffff"
-      text-color="#333333"
-      active-text-color="#409EFF"
-      default-active="/search"
-    >
-      <el-menu-item>
-        <el-icon><VideoCamera /></el-icon>
-        <span>视频搜索</span>
-      </el-menu-item>
-      <div class="flex-grow" />
-      <el-menu-item index="/search">
-        <el-icon><Search /></el-icon>
-        <span>搜索</span>
-      </el-menu-item>
-      <el-menu-item index="/local">
-        <el-icon><Folder /></el-icon>
-        <span>本地资源</span>
-      </el-menu-item>
-      <!-- <el-menu-item index="/favorites">
-        <el-icon><Star /></el-icon>
-        <span>收藏</span>
-      </el-menu-item> -->
-      <el-menu-item index="/plugins">
-        <el-icon><Connection /></el-icon>
-        <span>插件</span>
-      </el-menu-item>
-      <el-menu-item index="/about">
-        <el-icon><InfoFilled /></el-icon>
-        <span>关于</span>
-      </el-menu-item>
-    </el-menu>
+    <!-- 使用独立的导航栏组件 -->
+    <FreshNavbar />
 
     <div class="main-content">
       <router-view />
@@ -44,17 +10,10 @@
 </template>
 
 <script setup>
-import {
-  VideoCamera,
-  Search,
-  Folder,
-  Star,
-  Connection,
-  InfoFilled,
-} from "@element-plus/icons-vue";
+import FreshNavbar from "./components/FreshNavbar.vue";
 </script>
 
-<style>
+<style lang="less">
 :root {
   --primary-color: #409eff;
   --background-color: #f5f7fa;
@@ -63,6 +22,13 @@ import {
   --text-secondary: #666666;
   --border-color: #e4e7ed;
   --hover-color: #f2f6fc;
+
+  // 小清新颜色变量
+  --fresh-primary: #5e9eff;
+  --fresh-secondary: #ff9e7d;
+  --fresh-success: #8dd1a3;
+  --fresh-bg: rgba(255, 255, 255, 0.9);
+  --fresh-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 html,
@@ -82,18 +48,6 @@ body {
   flex-direction: column;
 }
 
-.main-menu {
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.flex-grow {
-  flex-grow: 1;
-}
-
 .main-content {
   flex: 1;
   padding: 20px;
@@ -105,40 +59,68 @@ body {
 
 /* 全局卡片样式 */
 .el-card {
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.3s ease;
-}
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  border: none;
 
-.el-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1) !important;
-}
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
 
-.el-card__header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
-  font-weight: 500;
-}
+  &__header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 500;
+  }
 
-.el-card__body {
-  padding: 20px;
+  &__body {
+    padding: 20px;
+  }
 }
 
 /* 按钮样式优化 */
 .el-button {
-  border-radius: 4px;
+  border-radius: 8px;
   font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  &--primary {
+    background-color: var(--fresh-primary);
+    border-color: var(--fresh-primary);
+
+    &:hover {
+      background-color: var(--fresh-primary);
+      border-color: var(--fresh-primary);
+      opacity: 0.9;
+    }
+  }
 }
 
 /* 表格样式优化 */
 .el-table {
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-}
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 
-.el-table th {
-  background-color: #f5f7fa !important;
-  font-weight: 500;
+  th {
+    background-color: #f5f7fa;
+    font-weight: 500;
+  }
+
+  td {
+    transition: all 0.2s ease;
+  }
+
+  tr:hover td {
+    background-color: rgba(94, 158, 255, 0.05);
+  }
 }
 
 /* 标题样式 */
