@@ -1,5 +1,4 @@
 import {
-  create,
   readFile,
   writeFile,
   mkdir,
@@ -8,7 +7,6 @@ import {
   DirEntry,
   remove,
 } from "@tauri-apps/plugin-fs";
-import { resolveResource, join } from "@tauri-apps/api/path";
 import { IPlugin, IResult, IHistory } from "../const/interface";
 
 export default class File {
