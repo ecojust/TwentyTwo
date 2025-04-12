@@ -16,7 +16,7 @@
           ></el-empty>
 
           <el-row v-else-if="history.length > 0" :gutter="20">
-            <el-scrollbar wrap-style="height:calc(100vh - 330px);width:100%;">
+            <el-scrollbar wrap-style="height:calc(100vh - 290px);width:100%;">
               <div
                 class="history-item"
                 v-for="(result, index) in history"
@@ -209,6 +209,7 @@ import {
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import File from "../tool/file";
+import History from "../tool/history";
 
 const router = useRouter();
 const favoritesStore = useFavoritesStore();
@@ -353,7 +354,7 @@ const history = ref([]);
 onMounted(async () => {
   // 从本地存储中加载收藏视频
 
-  history.value = await File.getHistory();
+  history.value = await History.getHistory();
 });
 </script>
 

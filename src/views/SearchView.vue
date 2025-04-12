@@ -126,6 +126,8 @@ import { invoke } from "@tauri-apps/api/core";
 import Plugin from "../tool/plugin";
 import Player from "../tool/player";
 import File from "../tool/file";
+import History from "../tool/history";
+import Config from "../tool/config";
 
 const router = useRouter();
 const pluginsStore = usePluginsStore();
@@ -183,7 +185,7 @@ async function playVideo(video) {
       return;
     }
   }
-  await File.pushHistory(video);
+  await History.pushHistory(video);
   showPlayer.value = true;
   status.value = "等待操作...";
 

@@ -4,32 +4,13 @@
       <template #header>
         <div class="view-header">
           <h2>插件管理</h2>
+          <el-button type="primary" @click="showImportDialog = true"
+            >导入插件</el-button
+          >
         </div>
       </template>
 
-      <el-card class="plugin-import" shadow="hover">
-        <template #header>
-          <h3>导入插件</h3>
-        </template>
-        <div class="import-form">
-          <el-input v-model="pluginUrl" placeholder="输入插件URL..." clearable>
-            <template #append>
-              <el-button
-                @click="importPlugin"
-                :loading="isImporting"
-                type="primary"
-              >
-                {{ isImporting ? "导入中..." : "导入" }}
-              </el-button>
-            </template>
-          </el-input>
-        </div>
-        <!-- <div class="import-options">
-          <el-button @click="importFromLocal" :icon="Upload" type="info" plain>
-            从本地文件导入
-          </el-button>
-        </div> -->
-      </el-card>
+      <!-- 原来的导入插件卡片被移除 -->
 
       <div class="plugin-list">
         <h3>已安装插件</h3>
@@ -41,60 +22,74 @@
         ></el-empty>
 
         <el-row v-else :gutter="20">
-          <el-col
-            v-for="plugin in plugins"
-            :key="plugin.id"
-            :xs="24"
-            :sm="12"
-            :md="8"
-          >
-            <el-card
-              @click="setPlugin(plugin)"
-              class="plugin-card"
-              shadow="hover"
+          <el-scrollbar wrap-style="height:calc(100vh - 300px);width:100%;">
+            <div
+              class="plugin-item"
+              v-for="plugin in plugins"
+              :key="plugin.id"
+              :xs="24"
+              :sm="12"
+              :md="8"
             >
-              <div class="plugin-header">
-                <h4>{{ plugin.name }}</h4>
-                <el-tag
-                  v-show="plugin.file_name === config.active_plugin"
-                  type="success"
-                  size="small"
-                  effect="light"
-                >
-                  已启用
-                </el-tag>
-              </div>
+              <el-card
+                @click="setPlugin(plugin)"
+                class="plugin-card"
+                shadow="hover"
+              >
+                <div class="plugin-header">
+                  <h4>{{ plugin.name }}</h4>
+                  <el-tag
+                    v-show="plugin.file_name === config.active_plugin"
+                    type="success"
+                    size="small"
+                    effect="light"
+                  >
+                    已启用
+                  </el-tag>
+                </div>
 
-              <div class="plugin-info">
-                <p>{{ plugin.description }}</p>
-                <p class="plugin-version">版本: {{ plugin.version }}</p>
-                <p class="plugin-author">作者: {{ plugin.author }}</p>
-              </div>
+                <div class="plugin-info">
+                  <p>{{ plugin.description }}</p>
+                  <p class="plugin-version">版本: {{ plugin.version }}</p>
+                  <p class="plugin-author">作者: {{ plugin.author }}</p>
+                </div>
 
-              <div class="plugin-actions">
-                <span>{{ plugin.file_name }}</span>
-                <!-- <el-button
-                  @click="setPlugin(plugin)"
-                  :type="plugin.active ? 'warning' : 'success'"
-                  size="small"
-                  plain
-                >
-                  {{ plugin.active ? "禁用" : "启用" }}
-                </el-button>
-                <el-button
-                  @click="removePlugin(plugin.id)"
-                  type="danger"
-                  size="small"
-                  plain
-                >
-                  删除
-                </el-button> -->
-              </div>
-            </el-card>
-          </el-col>
+                <div class="plugin-actions">
+                  <span class="file-name">{{ plugin.file_name }}</span>
+                </div>
+              </el-card>
+            </div>
+          </el-scrollbar>
         </el-row>
       </div>
     </el-card>
+
+    <!-- 新增导入插件对话框 -->
+    <el-dialog
+      v-model="showImportDialog"
+      title="导入插件"
+      width="500px"
+      destroy-on-close
+    >
+      <div class="import-form">
+        <el-input v-model="pluginUrl" placeholder="输入插件URL..." clearable>
+          <template #append>
+            <el-button
+              @click="importPlugin"
+              :loading="isImporting"
+              type="primary"
+            >
+              {{ isImporting ? "导入中..." : "导入" }}
+            </el-button>
+          </template>
+        </el-input>
+      </div>
+      <!-- <div class="import-options">
+        <el-button @click="importFromLocal" :icon="Upload" type="info" plain>
+          从本地文件导入
+        </el-button>
+      </div> -->
+    </el-dialog>
   </div>
 </template>
 
@@ -105,11 +100,13 @@ import { usePluginsStore } from "../stores/plugins";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Upload } from "@element-plus/icons-vue";
 import File from "../tool/file";
+import Config from "../tool/config";
 
 const pluginsStore = usePluginsStore();
 
 const pluginUrl = ref("");
 const isImporting = ref(false);
+const showImportDialog = ref(false); // 新增控制导入对话框显示的变量
 
 const plugins = computed(() => pluginsStore.plugins);
 
@@ -120,6 +117,7 @@ async function importPlugin() {
   try {
     await pluginsStore.importPluginFromUrl(pluginUrl.value);
     pluginUrl.value = "";
+    showImportDialog.value = false; // 导入成功后关闭对话框
   } catch (error) {
     console.error("导入插件出错:", error);
   } finally {
@@ -140,7 +138,7 @@ function removePlugin(id) {
 
 const setPlugin = async (plugin) => {
   config.value.active_plugin = plugin.file_name;
-  await File.setConfiguration(config.value);
+  await Config.setConfiguration(config.value);
 };
 
 const config = ref({
@@ -150,77 +148,84 @@ const config = ref({
 
 onMounted(async () => {
   // pluginsStore.loadPlugins();
-  config.value = await File.getConfiguration();
+  config.value = await Config.getConfiguration();
 });
 </script>
 
-<style scoped>
+<style lang="less">
 .plugins-view {
   width: 100%;
-}
 
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.plugin-import {
-  margin-bottom: 20px;
-}
+  .plugin-list {
+    margin-top: 20px;
 
-.import-form {
-  margin-bottom: 15px;
-}
+    .plugin-item {
+      width: 300px;
+      display: inline-block;
+      margin: 5px;
+      cursor: pointer;
 
-.import-options {
-  display: flex;
-  gap: 10px;
-}
+      .plugin-card {
+        margin-bottom: 20px;
+        height: 100%;
+        transition: transform 0.3s;
 
-.plugin-list {
-  margin-top: 20px;
-}
+        &:hover {
+          transform: translateY(-5px);
+        }
 
-.plugin-card {
-  margin-bottom: 20px;
-  height: 100%;
-  transition: transform 0.3s;
-}
+        .plugin-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
 
-.plugin-card:hover {
-  transform: translateY(-5px);
-}
+          h4 {
+            margin: 0;
+            font-size: 16px;
+          }
+        }
 
-.plugin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
+        .plugin-info {
+          margin-bottom: 20px;
 
-.plugin-header h4 {
-  margin: 0;
-  font-size: 16px;
-}
+          p {
+            margin: 5px 0;
+          }
 
-.plugin-info {
-  margin-bottom: 20px;
-}
+          .plugin-version,
+          .plugin-author {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+          }
+        }
 
-.plugin-info p {
-  margin: 5px 0;
-}
+        .plugin-actions {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+          .file-name {
+            font-size: 0.9rem;
+            color: var(--el-text-color-secondary);
+          }
+        }
+      }
+    }
+  }
 
-.plugin-version,
-.plugin-author {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
+  .import-form {
+    margin-bottom: 15px;
+  }
 
-.plugin-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+  .import-options {
+    display: flex;
+    gap: 10px;
+  }
 }
 </style>

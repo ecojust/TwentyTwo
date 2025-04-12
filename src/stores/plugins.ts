@@ -1,10 +1,9 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import File from "../tool/file";
-import Generater from "../tool/generater";
-
 import { IPlugin, IResult } from "../const/interface";
 import { invoke } from "@tauri-apps/api/core";
+import Plugin from "../tool/plugin";
+import Generater from "../tool/generater";
 import { ElMessage } from "element-plus";
 
 export const usePluginsStore = defineStore("plugins", () => {
@@ -19,7 +18,7 @@ export const usePluginsStore = defineStore("plugins", () => {
 
   // 从本地存储加载插件
   const loadPlugins = async () => {
-    const savedPlugins = await File.getPlugins();
+    const savedPlugins = await Plugin.getPlugins();
 
     console.log("savedPlugins", savedPlugins);
     if (savedPlugins) {
@@ -54,7 +53,7 @@ export const usePluginsStore = defineStore("plugins", () => {
       // if (existingPlugin) {
       //   throw new Error("插件已存在");
       // }
-      await File.pushPlugin(pluginName, response.data);
+      await Plugin.pushPlugin(pluginName, response.data);
       await loadPlugins();
       ElMessage.success(`导入插件成功:${pluginName}`);
     } catch (error) {
@@ -67,7 +66,7 @@ export const usePluginsStore = defineStore("plugins", () => {
 
   // 移除插件
   const removePlugin = async (name: string) => {
-    await File.deletePlugin(name);
+    await Plugin.deletePlugin(name);
     await loadPlugins();
   };
 
