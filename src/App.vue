@@ -8,8 +8,9 @@
       background-color="#ffffff"
       text-color="#333333"
       active-text-color="#409EFF"
+      default-active="/search"
     >
-      <el-menu-item index="/">
+      <el-menu-item>
         <el-icon><VideoCamera /></el-icon>
         <span>视频搜索</span>
       </el-menu-item>
@@ -22,10 +23,10 @@
         <el-icon><Folder /></el-icon>
         <span>本地资源</span>
       </el-menu-item>
-      <el-menu-item index="/favorites">
+      <!-- <el-menu-item index="/favorites">
         <el-icon><Star /></el-icon>
         <span>收藏</span>
-      </el-menu-item>
+      </el-menu-item> -->
       <el-menu-item index="/plugins">
         <el-icon><Connection /></el-icon>
         <span>插件</span>
@@ -49,7 +50,7 @@ import {
   Folder,
   Star,
   Connection,
-  InfoFilled
+  InfoFilled,
 } from "@element-plus/icons-vue";
 </script>
 

@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import File from "../tool/file";
 import { IPlugin, IResult } from "../const/interface";
 import { invoke } from "@tauri-apps/api/core";
+import { ElMessage } from "element-plus";
 
 export const usePluginsStore = defineStore("plugins", () => {
   // 存储插件列表
@@ -17,6 +18,8 @@ export const usePluginsStore = defineStore("plugins", () => {
   // 从本地存储加载插件
   const loadPlugins = async () => {
     const savedPlugins = await File.getPlugins();
+
+    console.log("savedPlugins", savedPlugins);
     if (savedPlugins) {
       try {
         plugins.value = savedPlugins;
@@ -43,9 +46,11 @@ export const usePluginsStore = defineStore("plugins", () => {
 
       await File.pushPlugin(pluginName!, response.data);
       await loadPlugins();
-      return true;
+      ElMessage.success("导入插件成功");
     } catch (error) {
       console.error("导入插件失败:", error);
+      ElMessage.error("导入插件失败");
+
       throw error;
     }
   };

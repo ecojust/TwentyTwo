@@ -24,11 +24,11 @@
             </template>
           </el-input>
         </div>
-        <div class="import-options">
+        <!-- <div class="import-options">
           <el-button @click="importFromLocal" :icon="Upload" type="info" plain>
             从本地文件导入
           </el-button>
-        </div>
+        </div> -->
       </el-card>
 
       <div class="plugin-list">
@@ -36,7 +36,7 @@
 
         <el-empty
           v-if="plugins.length === 0"
-          description="暂无已安装插件，请通过URL或本地文件导入插件"
+          description="暂无已安装插件，请通过URL导入插件"
           :image-size="200"
         ></el-empty>
 
@@ -48,15 +48,20 @@
             :sm="12"
             :md="8"
           >
-            <el-card class="plugin-card" shadow="hover">
+            <el-card
+              @click="setPlugin(plugin)"
+              class="plugin-card"
+              shadow="hover"
+            >
               <div class="plugin-header">
                 <h4>{{ plugin.name }}</h4>
                 <el-tag
-                  :type="plugin.active ? 'success' : 'info'"
+                  v-show="plugin.file_name === config.active_plugin"
+                  type="success"
                   size="small"
                   effect="light"
                 >
-                  {{ plugin.active ? "已启用" : "已禁用" }}
+                  已启用
                 </el-tag>
               </div>
 
@@ -67,8 +72,8 @@
               </div>
 
               <div class="plugin-actions">
-                <el-button
-                  @click="togglePlugin(plugin.id)"
+                <!-- <el-button
+                  @click="setPlugin(plugin)"
                   :type="plugin.active ? 'warning' : 'success'"
                   size="small"
                   plain
@@ -82,7 +87,7 @@
                   plain
                 >
                   删除
-                </el-button>
+                </el-button> -->
               </div>
             </el-card>
           </el-col>
@@ -118,6 +123,7 @@ async function importPlugin() {
     console.error("导入插件出错:", error);
   } finally {
     isImporting.value = false;
+    console.log(plugins.value);
   }
 }
 
@@ -131,8 +137,19 @@ function removePlugin(id) {
   pluginsStore.removePlugin(id);
 }
 
-onMounted(() => {
-  pluginsStore.loadPlugins();
+const setPlugin = async (plugin) => {
+  config.value.active_plugin = plugin.file_name;
+  await File.setConfiguration(config.value);
+};
+
+const config = ref({
+  theme: "light",
+  active_plugin: "",
+});
+
+onMounted(async () => {
+  // pluginsStore.loadPlugins();
+  config.value = await File.getConfiguration();
 });
 </script>
 
