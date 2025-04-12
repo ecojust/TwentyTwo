@@ -43,7 +43,7 @@
       </div>
 
       <el-empty
-        v-if="hasSearched && searchResults.length === 0"
+        v-if="!isSearching && hasSearched && searchResults.length === 0"
         description="未找到相关视频，请尝试其他关键词或选择更多搜索源"
         :image-size="200"
       ></el-empty>
@@ -111,7 +111,21 @@
       height="400px"
       fullscreen
       :title="playerTitle"
+      :show-close="false"
     >
+      <template #header>
+        <div class="player-header">
+          <div class="tv-style-title">{{ playerTitle }}</div>
+          <el-button
+            class="player-header-close"
+            type="primary"
+            size="small"
+            @click="showPlayer = false"
+          >
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+      </template>
       <div ref="playerContainer" class="player-container"></div>
     </el-dialog>
   </div>
@@ -123,6 +137,7 @@ import { useRouter } from "vue-router";
 import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
 import { invoke } from "@tauri-apps/api/core";
+import { Close } from "@element-plus/icons-vue";
 import Plugin from "../tool/plugin";
 import Player from "../tool/player";
 import File from "../tool/file";
@@ -190,7 +205,10 @@ async function playVideo(video) {
   status.value = "等待操作...";
 
   await nextTick();
-  playerTitle.value = video.name;
+
+  console.log("video", video);
+  playerTitle.value = video.title;
+
   if (playerContainer.value) {
     playerContainer.value.innerHTML = "";
     switch (video.type) {
@@ -291,16 +309,43 @@ onMounted(async () => {
     left: 0;
     width: calc(100% - 40px);
     z-index: 90;
-    padding: 20px !important;
+    padding: 15px 20px !important;
 
-    button {
-      i {
-        transition: all 0.3s;
-        font-weight: 900;
+    .tv-style-title {
+      display: inline-block;
+      font-size: 18px;
+      font-weight: 500;
+      color: #ffffff;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 6px 12px;
+      border-radius: 4px;
+      margin-right: 10px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      letter-spacing: 1px;
+      backdrop-filter: blur(2px);
+      border-left: 3px solid #409eff;
+    }
 
-        &:hover {
-          filter: drop-shadow(0 0 20px #24c8db);
-          transform: scale(1.5);
+    .player-header-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 18px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      opacity: 0.7;
+
+      .el-icon {
+        transition: all 0.2s ease;
+      }
+
+      &:hover {
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 0.3);
+
+        .el-icon {
+          transform: scale(1.1);
         }
       }
     }
