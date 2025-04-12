@@ -1,44 +1,18 @@
 # VideoSearch
 
-VideoSearch 是一款跨平台的视频搜索和管理工具。与软件相关的交流与探讨请点击传送门：[ Video Search](https://pd.qq.com/g/pd74066781)
+VideoSearch 是一款跨平台的视频搜索和管理工具。
+软件相关的交流与探讨请点击传送门：[ Video Search](https://pd.qq.com/g/pd74066781)
 
 ## 功能特点
 
-- 🎬 **本地视频管理**：轻松导入和管理本地视频文件和文件夹
 - 🔍 **多源搜索**：通过插件系统支持多种在线视频源搜索
 - ⭐ **收藏功能**：收藏喜爱的视频，方便后续观看
 - 🧩 **插件系统**：支持自定义插件开发，扩展更多视频源
-- 📱 **跨平台支持**：基于 Tauri 和 Vue 3 构建，支持 Windows、macOS 和 Linux
-
-## 技术栈
-
-- 前端：Vue 3 + Element Plus
-- 桌面应用框架：Tauri
-- 状态管理：Pinia
-
-## 开发指南
-
-### 环境要求
-
-- Node.js 16+
-- Rust 环境 (Tauri 依赖)
-
-### 安装与运行
-
-```bash
-# 安装依赖
-npm install
-
-# 开发模式运行
-npm run tauri dev
-
-# 构建应用
-npm run tauri build
-```
+- 📱 **跨平台支持**： Windows、macOS
 
 ## 插件开发
 
-VideoSearch 支持自定义插件开发，您可以通过创建符合插件接口的 JavaScript 文件来扩展视频源。详细文档请参考 docs/plugin-development.md 。
+VideoSearch 支持自定义插件开发，您可以通过创建符合插件接口的 JavaScript 文件来扩展视频源。详细文档请参考：[插件开发](https://pd.qq.com/g/pd74066781?subc=690166750) 。
 
 ## 免责声明
 
