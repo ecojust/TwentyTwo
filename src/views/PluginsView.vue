@@ -51,7 +51,11 @@
             <el-card class="plugin-card" shadow="hover">
               <div class="plugin-header">
                 <h4>{{ plugin.name }}</h4>
-                <el-tag :type="plugin.active ? 'success' : 'info'" size="small" effect="light">
+                <el-tag
+                  :type="plugin.active ? 'success' : 'info'"
+                  size="small"
+                  effect="light"
+                >
                   {{ plugin.active ? "已启用" : "已禁用" }}
                 </el-tag>
               </div>
@@ -89,11 +93,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { usePluginsStore } from "../stores/plugins";
 // 修改这一行，使用新的插件
 import { open } from "@tauri-apps/plugin-dialog";
 import { Upload } from "@element-plus/icons-vue";
+import File from "../tool/file";
 
 const pluginsStore = usePluginsStore();
 
@@ -105,9 +110,7 @@ const plugins = computed(() => pluginsStore.plugins);
 // 从URL导入插件
 async function importPlugin() {
   if (!pluginUrl.value.trim()) return;
-
   isImporting.value = true;
-
   try {
     await pluginsStore.importPluginFromUrl(pluginUrl.value);
     pluginUrl.value = "";
@@ -118,36 +121,19 @@ async function importPlugin() {
   }
 }
 
-// 从本地文件导入插件
-async function importFromLocal() {
-  try {
-    const selected = await open({
-      multiple: false,
-      filters: [
-        {
-          name: "插件文件",
-          extensions: ["js", "json"],
-        },
-      ],
-    });
-
-    if (selected) {
-      await pluginsStore.importPluginFromFile(selected);
-    }
-  } catch (error) {
-    console.error("导入本地插件出错:", error);
-  }
-}
-
 // 切换插件启用状态
 function togglePlugin(id) {
-  pluginsStore.togglePlugin(id);
+  // pluginsStore.togglePlugin(id);
 }
 
 // 删除插件
 function removePlugin(id) {
   pluginsStore.removePlugin(id);
 }
+
+onMounted(() => {
+  pluginsStore.loadPlugins();
+});
 </script>
 
 <style scoped>

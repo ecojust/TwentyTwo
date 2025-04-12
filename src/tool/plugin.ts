@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import * as cheerio from "cheerio";
+import { IPlugin, IResult } from "../const/interface";
 
 const pluginTemplate = {
   name: "x139",
@@ -66,19 +67,6 @@ const pluginTemplate = {
     },
   },
 };
-
-interface IPlugin {
-  search: {
-    url: string;
-    description: string;
-  };
-}
-
-interface IResult {
-  success: boolean;
-  message: string;
-  data: string;
-}
 
 export default class Plugin {
   static _currentPlugin: IPlugin;

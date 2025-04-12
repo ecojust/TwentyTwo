@@ -99,17 +99,27 @@
       </div>
     </el-card>
 
-    <div class="html">{{ hhtml }}</div>
+    <el-dialog
+      class="player-dialog"
+      :close-on-click-modal="false"
+      v-model="showPlayer"
+      height="400px"
+      fullscreen
+    >
+      <div ref="playerContainer" class="player-container"></div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
 import { invoke } from "@tauri-apps/api/core";
 import Plugin from "../tool/plugin";
+import Player from "../tool/player";
+import File from "../tool/file";
 
 const router = useRouter();
 const pluginsStore = usePluginsStore();
@@ -121,6 +131,8 @@ const isSearching = ref(false);
 const hasSearched = ref(false);
 const searchResults = ref([]);
 
+const PlayerDom = ref(null);
+const showPlayer = ref(true);
 const hhtml = ref("");
 
 // 插件选择
@@ -161,6 +173,8 @@ async function searchVideos() {
   }
 }
 
+const playerContainer = ref(null); // 添加对播放器容器的引用
+
 // 播放视频
 async function playVideo(video) {
   // router.push({
@@ -176,29 +190,72 @@ async function playVideo(video) {
 
   const res = await Plugin.getPlayUrl(video.href);
   if (res.success) {
-    const videoURL = res.data;
-    console.log(videoURL);
+    showPlayer.value = true;
+
+    // 使用 nextTick 确保 DOM 已更新
+    await nextTick();
+
+    // 创建播放器并添加到容器中
+    if (playerContainer.value) {
+      // 清空容器
+      playerContainer.value.innerHTML = "";
+
+      // 创建播放器元素
+      const playerElement = Player.m3u8Parser(res.data);
+
+      // 添加到容器
+      playerContainer.value.appendChild(playerElement);
+    }
   }
 }
+
+// 监听对话框关闭事件，清理播放器
+watch(showPlayer, (newVal) => {
+  if (!newVal && playerContainer.value) {
+    playerContainer.value.innerHTML = "";
+  }
+});
 
 // 添加到收藏
 function addToFavorites(video) {
   favoritesStore.addFavorite(video);
 }
 
-onMounted(async () => {
-  Plugin.setPlugin({
-    search: {
-      url: "https://www.x139.cn/search.php?searchword={keyword}",
-      description: "x139搜索",
-    },
-  });
-});
+onMounted(async () => {});
 </script>
 
-<style scoped>
+<style lang="less">
 .search-view {
   width: 100%;
+}
+.player-dialog {
+  position: relative;
+  .el-dialog__header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - 40px);
+    z-index: 90;
+    padding: 20px !important;
+    button {
+      i {
+        transition: all 0.3s;
+        font-weight: 900;
+      }
+      i:hover {
+        filter: drop-shadow(0 0 20px #24c8db);
+        transform: scale(1.5);
+      }
+    }
+  }
+  .el-dialog__body {
+    height: 100%;
+    .player-container {
+      height: 100%;
+      // border: 1px solid red;
+      // background: pink;
+    }
+  }
 }
 
 .view-header {
