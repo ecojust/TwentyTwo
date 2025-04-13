@@ -28,18 +28,8 @@
             </p>
           </div>
 
-          <!-- <div class="app-features">
-          <h4>主要功能</h4>
-          <ul>
-            <li>本地视频文件管理和播放</li>
-            <li>通过插件系统支持多种在线视频源</li>
-            <li>视频收藏和历史记录</li>
-            <li>自定义插件开发</li>
-          </ul>
-        </div> -->
-
           <div class="app-copyright">
-            <p>© 2023 VideoSearch. 保留所有权利。</p>
+            <p>© 2025 VideoSearch. 保留所有权利。</p>
           </div>
         </el-scrollbar>
       </div>

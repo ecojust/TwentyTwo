@@ -6,6 +6,8 @@ import router from "./router";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 
+import "./common.less";
+
 // 创建 Pinia 状态管理
 const pinia = createPinia();
 

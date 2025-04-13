@@ -9,20 +9,7 @@
         <div class="status">{{ status }}</div>
       </template>
 
-      <!-- <el-collapse class="plugin-collapse">
-        <el-collapse-item title="搜索源选择" name="1">
-          <el-checkbox-group v-model="selectedPlugins">
-            <el-checkbox
-              v-for="plugin in activePlugins"
-              :key="plugin.id"
-              :label="plugin.id"
-            >
-              {{ plugin.name }}
-            </el-checkbox>
-          </el-checkbox-group>
-        </el-collapse-item>
-      </el-collapse> -->
-
+      <!-- 搜索表单 -->
       <div class="search-form">
         <el-input
           v-model="searchQuery"
@@ -42,6 +29,7 @@
         </el-input>
       </div>
 
+      <!-- 搜索结果展示区域 -->
       <el-empty
         v-if="!isSearching && hasSearched && searchResults.length === 0"
         description="未找到相关视频，请尝试其他关键词或选择更多搜索源"
@@ -99,11 +87,13 @@
         </el-scrollbar>
       </el-row>
 
+      <!-- 加载状态 -->
       <div v-if="isSearching" class="loading">
         <el-skeleton :rows="5" animated />
       </div>
     </el-card>
 
+    <!-- 视频播放器对话框 -->
     <el-dialog
       class="player-dialog"
       :close-on-click-modal="false"
@@ -113,56 +103,56 @@
       :title="playerTitle"
       :show-close="false"
     >
-      <template #header>
-        <div class="player-header">
-          <div class="tv-style-title">{{ playerTitle }}</div>
-          <el-button
-            class="player-header-close"
-            type="primary"
-            size="small"
-            @click="showPlayer = false"
-          >
-            <el-icon><Close /></el-icon>
-          </el-button>
-        </div>
-      </template>
-      <div ref="playerContainer" class="player-container"></div>
+      <VideoPlayer
+        :video-source="playerSource"
+        :video-title="playerTitle"
+        :video-type="playerType"
+        @onClose="showPlayer = false"
+      ></VideoPlayer>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from "vue";
+// 导入依赖
+import { ref, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
-import { invoke } from "@tauri-apps/api/core";
 import { Close } from "@element-plus/icons-vue";
-import Plugin from "../tool/plugin";
-import Player from "../tool/player";
-import File from "../tool/file";
-import History from "../tool/history";
-import Config from "../tool/config";
+import VideoPlayer from "../components/VideoPlayer.vue";
 
+// 导入工具类
+import Plugin from "../tool/plugin";
+import History from "../tool/history";
+
+// 初始化 store
 const router = useRouter();
 const pluginsStore = usePluginsStore();
 const favoritesStore = useFavoritesStore();
 
-// 搜索状态
+// 状态管理
+const status = ref("输入关键字开始查询");
+const activePlugin = ref("");
+
+// 搜索相关状态
 const searchQuery = ref("成龙");
 const isSearching = ref(false);
 const hasSearched = ref(false);
 const searchResults = ref([]);
 
-const PlayerDom = ref(null);
+// 播放器相关状态
 const showPlayer = ref(false);
-const hhtml = ref("");
+const playerSource = ref("");
+const playerType = ref("");
+const playerTitle = ref("");
 
-const activePlugin = ref("");
-
-// 搜索视频
+/**
+ * 搜索视频
+ */
 async function searchVideos() {
   if (!searchQuery.value.trim()) return;
+
   status.value = "正在搜索...";
   console.log("开始搜索");
   isSearching.value = true;
@@ -172,66 +162,58 @@ async function searchVideos() {
     const res = await Plugin.search(searchQuery.value);
     if (res.success) {
       searchResults.value = res.data;
-      status.value = "搜索结束，共搜索到 " + res.data.length + " 条结果";
+      status.value = `搜索结束，共搜索到 ${res.data.length} 条结果`;
     }
   } catch (error) {
     console.error("搜索出错:", error);
-    status.value = "搜索出错：" + error;
+    status.value = `搜索出错：${error}`;
   } finally {
     isSearching.value = false;
     hasSearched.value = true;
   }
 }
 
-const playerContainer = ref(null); // 添加对播放器容器的引用
-const playerTitle = ref("");
-const status = ref("输入关键字开始查询");
-// 播放视频
+/**
+ * 播放视频
+ * @param {Object} video 视频对象
+ */
 async function playVideo(video) {
+  // 如果没有播放链接，先获取
   if (!video.play_url) {
     const res = await Plugin.getPlayUrl(video.href, (msg) => {
       status.value = msg;
     });
+
     if (res.success) {
       video.play_url = res.data;
       video.type = res.type;
     } else {
-      status.value = "获取播放链接失败：" + res.message;
+      status.value = `获取播放链接失败：${res.message}`;
       return;
     }
   }
+
+  // 添加到历史记录
   await History.pushHistory(video);
-  showPlayer.value = true;
   status.value = "等待操作...";
 
-  await nextTick();
-
-  console.log("video", video);
+  // 设置播放器参数并显示
   playerTitle.value = video.title;
-
-  if (playerContainer.value) {
-    playerContainer.value.innerHTML = "";
-    switch (video.type) {
-      case "m3u8":
-        const playerElement = Player.m3u8Parser(video.play_url);
-        playerContainer.value.appendChild(playerElement);
-        break;
-    }
-  }
+  playerSource.value = video.play_url;
+  playerType.value = video.type;
+  showPlayer.value = true;
+  await nextTick();
 }
 
-// 监听对话框关闭事件，清理播放器
-watch(showPlayer, (newVal) => {
-  if (!newVal && playerContainer.value) {
-    playerContainer.value.innerHTML = "";
-  }
-});
-
-// 添加到收藏
+/**
+ * 添加到收藏
+ * @param {Object} video 视频对象
+ */
 function addToFavorites(video) {
   favoritesStore.addFavorite(video);
 }
 
+// 生命周期钩子
 onMounted(async () => {
   await Plugin.setPlugin();
   if (!Plugin._currentPlugin) {
@@ -247,6 +229,7 @@ onMounted(async () => {
 .search-view {
   width: 100%;
 
+  // 头部样式
   .view-header {
     display: flex;
     justify-content: space-between;
@@ -257,6 +240,7 @@ onMounted(async () => {
     margin: 20px 0;
   }
 
+  // 视频列表样式
   .video-item {
     width: 270px;
     display: inline-block;
@@ -298,8 +282,14 @@ onMounted(async () => {
       margin-top: 15px;
     }
   }
+
+  // 加载状态样式
+  .loading {
+    padding: 20px;
+  }
 }
 
+// 播放器对话框样式
 .player-dialog {
   position: relative;
 
@@ -358,9 +348,5 @@ onMounted(async () => {
       height: 100%;
     }
   }
-}
-
-.loading {
-  padding: 20px;
 }
 </style>
