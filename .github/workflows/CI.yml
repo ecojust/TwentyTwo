@@ -98,8 +98,8 @@ jobs:
           tagName: "v__VERSION__-${{ steps.date_run.outputs.date }}-${{ steps.date_run.outputs.number }}"
           releaseName: "VideoSearch-__VERSION__ (${{ steps.date_run.outputs.date }}#${{ steps.date_run.outputs.number }})"
           releaseBody: |
-            提交ID: ${{ steps.date_run.outputs.commit_sha }}
-            提交信息: ${{ steps.date_run.outputs.commit_message }}
+            commit id: ${{ steps.date_run.outputs.commit_sha }}
+            commit message: ${{ steps.date_run.outputs.commit_message }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
