@@ -17,14 +17,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          #- platform: "windows-latest"
-          #  args: ""
-          #- platform: "macos-latest" # for Arm based macs (M1 and above).
-          #  args: "--target aarch64-apple-darwin"
-          #- platform: "macos-latest" # for Intel based macs.
-          #  args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-latest" # for Android.
-            args: "--target aarch64-linux-android"
+          - platform: "windows-latest"
+            args: ""
+          - platform: "macos-latest" # for Arm based macs (M1 and above).
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest" # for Intel based macs.
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-22.04"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
 
@@ -33,7 +33,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1.Rust
       # Rust setup
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
@@ -44,7 +43,6 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
-      # 2.Node
       # Sync node version and setup cache
       - name: Sync node version and setup cache
         uses: actions/setup-node@v4
@@ -59,63 +57,16 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      # 3.Apple
-      # Install x86 Apple
-      - name: Install x86 Apple
+      - name: Install x86 Apple (x86 Apple only)
         if: matrix.platform == 'macos-latest' && matrix.args == '--target x86_64-apple-darwin'
         run: rustup target add x86_64-apple-darwin
 
-      # 4.Android
-      # 为Android构建设置Java环境
-      - name: Set up JDK 17
-        if: matrix.platform == 'ubuntu-latest'
-        uses: actions/setup-java@v3
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      # 安装Android SDK
-      - name: Setup Android SDK
-        if: matrix.platform == 'ubuntu-latest'
-        uses: android-actions/setup-android@v2
-
-      # 安装Android NDK
-      - name: Install Android NDK
-        if: matrix.platform == 'ubuntu-latest'
-        run: |
-          sdkmanager --install "ndk;25.2.9519653"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25.2.9519653" >> $GITHUB_ENV
-          # 添加NDK工具链到PATH
-          echo "$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
-          # 设置CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER
-          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang" >> $GITHUB_ENV
-          # 设置CC和CXX环境变量
-          echo "CC_aarch64_linux_android=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang" >> $GITHUB_ENV
-          echo "CXX_aarch64_linux_android=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang++" >> $GITHUB_ENV
-          # 设置AR环境变量
-          echo "AR_aarch64_linux_android=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" >> $GITHUB_ENV
-
-      # 安装OpenSSL依赖
-      - name: Install OpenSSL
-        if: matrix.platform == 'ubuntu-latest'
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config
-          echo "OPENSSL_DIR=/usr" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=/usr/include" >> $GITHUB_ENV
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # 为Android添加Rust目标
-      - name: Add Android target
-        if: matrix.platform == 'ubuntu-latest'
-        run: rustup target add aarch64-linux-android
-
-      # 为Android初始化
-      - name: Add Android target
-        if: matrix.platform == 'ubuntu-latest'
-        run: pnpm tauri android init
-
-      # 5.Parameters
       # 获取当前日期和运行ID作为序号
       - name: Get date and run number
         id: date_run
@@ -146,30 +97,8 @@ jobs:
           # 显示更新后的配置
           cat $CONFIG_FILE | grep version
 
-      # Build the app(mobile)
-      - name: Build the mobile
-        if: matrix.platform == 'ubuntu-latest'
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-          OPENSSL_DIR: ${{ env.OPENSSL_DIR }}
-          OPENSSL_LIB_DIR: ${{ env.OPENSSL_LIB_DIR }}
-          OPENSSL_INCLUDE_DIR: ${{ env.OPENSSL_INCLUDE_DIR }}
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER }}
-          CC_aarch64_linux_android: ${{ env.CC_aarch64_linux_android }}
-          CXX_aarch64_linux_android: ${{ env.CXX_aarch64_linux_android }}
-          AR_aarch64_linux_android: ${{ env.AR_aarch64_linux_android }}
-        run: |
-          # 检查环境变量
-          echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
-          echo "PATH: $PATH"
-          ls -la $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/
-
-          pnpm tauri android init
-          pnpm tauri build --target aarch64-linux-android
-
-      # Build the app(desktop)
+      # Build the app
       - name: Build the app
-        if: matrix.platform != 'ubuntu-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
