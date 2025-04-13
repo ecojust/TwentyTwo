@@ -7,6 +7,9 @@
           <el-button type="primary" @click="showImportDialog = true"
             >导入插件</el-button
           >
+          <el-button type="primary" @click="handleOpenEditorDialog"
+            >插件开发</el-button
+          >
         </div>
       </template>
 
@@ -90,25 +93,103 @@
         </el-button>
       </div> -->
     </el-dialog>
+
+    <!-- 新增插件开发对话框 -->
+    <el-dialog
+      v-model="showDevDialog"
+      title="插件调试"
+      width="80%"
+      height="80%"
+      destroy-on-close
+      fullscreen
+      @close="handlecloseDevDialog"
+    >
+      <div class="dev-container">
+        <div class="editor-container">
+          <div ref="monacoContainer" class="monaco-editor"></div>
+        </div>
+        <div class="console-container">
+          <div class="console-header">
+            <h4>日志控制台</h4>
+            <el-button type="primary" size="small" @click="runSearch"
+              >运行search</el-button
+            >
+            <el-button type="success" size="small" @click="runDetail"
+              >运行detail</el-button
+            >
+            <el-button type="warning" size="small" @click="runPlay"
+              >运行play</el-button
+            >
+          </div>
+          <div class="console-output" ref="consoleOutput">
+            <div
+              v-for="(log, index) in logs"
+              :key="index"
+              :class="['log-item', log.type]"
+            >
+              {{ log.content }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { usePluginsStore } from "../stores/plugins";
 // 修改这一行，使用新的插件
 import { open } from "@tauri-apps/plugin-dialog";
 import { Upload } from "@element-plus/icons-vue";
 import File from "../tool/file";
 import Config from "../tool/config";
-
+import { ElMessage } from "element-plus";
+import Monaco from "../tool/monaco";
 const pluginsStore = usePluginsStore();
 
+const monacoContainer = ref(null);
+const consoleOutput = ref(null);
+const logs = ref([]);
 const pluginUrl = ref("");
 const isImporting = ref(false);
-const showImportDialog = ref(false); // 新增控制导入对话框显示的变量
+const showImportDialog = ref(false);
+const showDevDialog = ref(false);
+const searchList = ref([]);
+const detailInfo = ref({});
+const playUrl = ref("");
+const config = ref({
+  theme: "light",
+  active_plugin: "",
+});
 
 const plugins = computed(() => pluginsStore.plugins);
+
+const handleOpenEditorDialog = () => {
+  showDevDialog.value = true;
+  nextTick(() => {
+    if (monacoContainer.value) {
+      Monaco.create(monacoContainer.value);
+    }
+  });
+};
+
+const handlecloseDevDialog = () => {
+  Monaco.dispose();
+};
+
+const runSearch = async () => {
+  searchList.value = await Monaco.runSearch();
+};
+
+const runDetail = async () => {
+  const url = await Monaco.runDetails();
+};
+
+const runPlay = async () => {
+  const url = searchList.value[0].href;
+  await Monaco.runPlay(url);
+};
 
 // 从URL导入插件
 async function importPlugin() {
@@ -126,30 +207,22 @@ async function importPlugin() {
   }
 }
 
-// 切换插件启用状态
-function togglePlugin(id) {
-  // pluginsStore.togglePlugin(id);
-}
-
-// 删除插件
-function removePlugin(id) {
-  pluginsStore.removePlugin(id);
-}
-
 const setPlugin = async (plugin) => {
   config.value.active_plugin = plugin.file_name;
   await Config.setConfiguration(config.value);
 };
 
-const config = ref({
-  theme: "light",
-  active_plugin: "",
-});
+// 清空日志
+function clearLogs() {
+  logs.value = [];
+}
 
 onMounted(async () => {
   // pluginsStore.loadPlugins();
   config.value = await Config.getConfiguration();
 });
+
+onBeforeUnmount(() => {});
 </script>
 
 <style lang="less">
@@ -226,6 +299,79 @@ onMounted(async () => {
   .import-options {
     display: flex;
     gap: 10px;
+  }
+
+  // 插件开发相关样式
+  .dev-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+
+    .editor-container {
+      flex: 1;
+      min-height: 60%;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      overflow: hidden;
+
+      .monaco-editor {
+        height: 100%;
+        min-height: 400px;
+      }
+    }
+
+    .console-container {
+      height: 250px;
+      margin-top: 15px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+
+      .console-header {
+        display: flex;
+        align-items: center;
+        padding: 8px 15px;
+        border-bottom: 1px solid #dcdfe6;
+        background-color: #f5f7fa;
+
+        h4 {
+          margin: 0;
+          margin-right: auto;
+        }
+
+        .el-button {
+          margin-left: 10px;
+        }
+      }
+
+      .console-output {
+        flex: 1;
+        padding: 10px;
+        overflow-y: auto;
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        font-family: monospace;
+
+        .log-item {
+          padding: 3px 0;
+          white-space: pre-wrap;
+          word-break: break-all;
+
+          &.info {
+            color: #d4d4d4;
+          }
+
+          &.success {
+            color: #4caf50;
+          }
+
+          &.error {
+            color: #f44336;
+          }
+        }
+      }
+    }
   }
 }
 </style>

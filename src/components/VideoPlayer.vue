@@ -7,6 +7,8 @@
   >
     <div class="player-header" :class="{ 'controls-hidden': controlsHidden }">
       <div class="tv-style-title">{{ videoTitle }}</div>
+
+      <span>{{ videoSource }}</span>
       <el-button
         class="player-header-close"
         type="primary"
@@ -24,14 +26,14 @@
       @timeupdate="updateProgress"
       @loadedmetadata="videoLoaded"
     >
-      <source :src="videoSource" :type="videoType" />
+      <source :src="videoSource" :type="computedVideoType" />
       您的浏览器不支持 HTML5 视频播放。
     </video>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { Close } from "@element-plus/icons-vue";
 
 const emit = defineEmits(["on-close"]);
@@ -40,14 +42,36 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  videoId: {
+  videoType: {
     type: String,
-    required: true,
+    default: "",
   },
   videoTitle: {
     type: String,
     default: "未命名视频",
   },
+});
+
+// 根据视频URL自动分析视频类型
+const computedVideoType = computed(() => {
+  const extension =
+    props.videoType?.toLowerCase() ||
+    props.videoSource.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
+
+  // 根据扩展名映射到MIME类型
+  const mimeTypes = {
+    mp4: "video/mp4",
+    webm: "video/webm",
+    ogg: "video/ogg",
+    mov: "video/quicktime",
+    avi: "video/x-msvideo",
+    flv: "video/x-flv",
+    wmv: "video/x-ms-wmv",
+    m3u8: "application/x-mpegURL",
+    ts: "video/mp2t",
+    mkv: "video/x-matroska",
+  };
+  return mimeTypes[extension] || "video/mp4"; // 默认返回mp4类型
 });
 
 const videoRef = ref(null);
