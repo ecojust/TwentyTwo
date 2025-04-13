@@ -33,6 +33,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 1.Rust
       # Rust setup
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
@@ -43,6 +44,28 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
+      # 2.Node
+      # Sync node version and setup cache
+      - name: Sync node version and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      # Install pnpm globally
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # Install frontend dependencies
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      # 3.Apple
+      # Install x86 Apple
+      - name: Install x86 Apple
+        if: matrix.platform == 'macos-latest' && matrix.args == '--target x86_64-apple-darwin'
+        run: rustup target add x86_64-apple-darwin
+
+      # 4.Android
       # 为Android构建设置Java环境
       - name: Set up JDK 17
         if: matrix.platform == 'ubuntu-latest'
@@ -68,30 +91,12 @@ jobs:
         if: matrix.platform == 'ubuntu-latest'
         run: rustup target add aarch64-linux-android
 
-      # Sync node version and setup cache
-      - name: Sync node version and setup cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-
-      # Install pnpm globally
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      # Install frontend dependencies
-      - name: Install frontend dependencies
-        run: pnpm install
-
       # 为Android初始化
       - name: Add Android target
         if: matrix.platform == 'ubuntu-latest'
         run: pnpm tauri android init
 
-      # Install x86 Apple
-      - name: Install x86 Apple
-        if: matrix.platform == 'macos-latest' && matrix.args == '--target x86_64-apple-darwin'
-        run: rustup target add x86_64-apple-darwin
-
+      # 5.Parameters
       # 获取当前日期和运行ID作为序号
       - name: Get date and run number
         id: date_run
@@ -122,12 +127,21 @@ jobs:
           # 显示更新后的配置
           cat $CONFIG_FILE | grep version
 
-      # Build the app
+      # Build the app(desktop)
+      - name: Build the mobile
+        if: matrix.platform == 'ubuntu-latest'
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        run: |
+          pnpm tauri android init
+          pnpm tauri build --target aarch64-linux-android
+
+      # Build the app(desktop)
       - name: Build the app
+        if: matrix.platform != 'ubuntu-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         with:
           tagName: "v__VERSION__-${{ steps.date_run.outputs.date }}-${{ steps.date_run.outputs.number }}"
           releaseName: "VideoSearch-__VERSION__ (${{ steps.date_run.outputs.date }}#${{ steps.date_run.outputs.number }})"
