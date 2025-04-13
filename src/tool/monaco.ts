@@ -16,68 +16,48 @@ export default class Monaco {
    */
   static create(
     container: HTMLElement,
-    options: monaco.editor.IStandaloneEditorConstructionOptions = {},
-    value: string = ""
+    options: monaco.editor.IStandaloneEditorConstructionOptions = {}
   ): monaco.editor.IStandaloneCodeEditor {
     this.container = container;
 
-    // 合并默认选项
     const defaultOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
       value: `
-      
-      
-      (() => {
+(() => {
   return {
-    name: "mgdy5",
-    description: "满格影视",
+    name: "xxx",
+    description: "xxxxxx",
     version: "1.0.0",
-    author: "mgdy5",
+    author: "xxx",
     search: {
-      url: "https://mgdy5.cc/vodsearch.html?wd={keyword}&submit=",
-      description: "x139搜索",
+      url: "https://xxx?xxx={keyword}xxx",
+      description: "获取搜索列表",
       parse: function (html) {
         const $ = cheerio.load(html);
-        const listItems = $("#searchList .clearfix")
-          .map((index, element) => {
-            // 或者获取元素的特定属性
-            const href = $(element).find(".btn-warm").attr("href");
-            const title = $(element).find(".searchkey").text().trim();
-            const thumbnail = $(element).find(".myui-vodlist__thumb").data("original");
-            const score = $(element).find(".pic-tag-top").text().trim();
-            // 返回你需要的数据结构
-            return {
-              title,
-              href: "https://mgdy5.cc" + href,
-              thumbnail,
-              score,
-              source: "mgdy5",
-            };
-          })
-          .get();
+        const listItems = [];
         return listItems;
       },
     },
-   
+    detail: {
+      description: "详情页面，获取播放地址",
+      parse: function (html) {
+        const $ = cheerio.load(html);
+        const playUrl = "";
+        return playUrl;
+      },
+    },
     play: {
       description: "播放页面，获取真实播放地址",
       mediaType: "m3u8",
       parse: function (html) {
-       // 使用正则表达式匹配以.m3u8结尾的URL
-        const m3u8Regex = /(https?:\/\/[^\s"']+\.m3u8)/g;
-        const matches = html.match(m3u8Regex);
-        let url = '';
-        if (matches && matches.length > 0) {
-          console.log("找到m3u8链接:", matches[0]);
-          url =  matches[0];
-        }
-         url =  url.split('url=')[1];
-        console.log("url",url);
-        return url.split('url=')[1];
+        const $ = cheerio.load(html);
+        const source = "";
+        return source;
       },
     },
   };
 })()
       
+
       `,
       language: "javascript",
       theme: "vs-dark",

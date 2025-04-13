@@ -4,12 +4,14 @@
       <template #header>
         <div class="view-header">
           <h2>插件管理</h2>
-          <el-button type="primary" @click="showImportDialog = true"
-            >导入插件</el-button
-          >
-          <el-button type="primary" @click="handleOpenEditorDialog"
-            >插件开发</el-button
-          >
+          <div>
+            <el-button type="primary" @click="showImportDialog = true"
+              >导入插件</el-button
+            >
+            <el-button type="primary" @click="handleOpenEditorDialog"
+              >插件调试</el-button
+            >
+          </div>
         </div>
       </template>
 
@@ -87,30 +89,36 @@
           </template>
         </el-input>
       </div>
-      <!-- <div class="import-options">
-        <el-button @click="importFromLocal" :icon="Upload" type="info" plain>
-          从本地文件导入
-        </el-button>
-      </div> -->
     </el-dialog>
 
     <!-- 新增插件开发对话框 -->
     <el-dialog
+      class="dev-dialog"
       v-model="showDevDialog"
-      title="插件调试"
       width="80%"
-      height="80%"
       destroy-on-close
       fullscreen
+      :show-close="false"
       @close="handlecloseDevDialog"
     >
       <div class="dev-container">
+        <div class="dev-header">
+          <!-- <div class="tv-style-title">插件调试</div> -->
+          <el-button
+            class="player-header-close"
+            type="primary"
+            size="small"
+            @click="showDevDialog = false"
+          >
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
         <div class="editor-container">
           <div ref="monacoContainer" class="monaco-editor"></div>
         </div>
         <div class="console-container">
           <div class="console-header">
-            <h4>日志控制台</h4>
+            <h4>控制台</h4>
             <el-button type="primary" size="small" @click="runSearch"
               >运行search</el-button
             >
@@ -122,13 +130,7 @@
             >
           </div>
           <div class="console-output" ref="consoleOutput">
-            <div
-              v-for="(log, index) in logs"
-              :key="index"
-              :class="['log-item', log.type]"
-            >
-              {{ log.content }}
-            </div>
+            <pre>{{ result }}</pre>
           </div>
         </div>
       </div>
@@ -139,29 +141,31 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { usePluginsStore } from "../stores/plugins";
-// 修改这一行，使用新的插件
-import { open } from "@tauri-apps/plugin-dialog";
+// 移除未使用的 open 导入
 import { Upload } from "@element-plus/icons-vue";
-import File from "../tool/file";
 import Config from "../tool/config";
 import { ElMessage } from "element-plus";
 import Monaco from "../tool/monaco";
+import { Close } from "@element-plus/icons-vue";
+
 const pluginsStore = usePluginsStore();
 
 const monacoContainer = ref(null);
 const consoleOutput = ref(null);
-const logs = ref([]);
+// 移除未使用的 logs 变量
 const pluginUrl = ref("");
 const isImporting = ref(false);
 const showImportDialog = ref(false);
 const showDevDialog = ref(false);
 const searchList = ref([]);
 const detailInfo = ref({});
-const playUrl = ref("");
+// 移除未使用的 playUrl 变量
 const config = ref({
   theme: "light",
   active_plugin: "",
 });
+// 简化测试数据
+const result = ref([]);
 
 const plugins = computed(() => pluginsStore.plugins);
 
@@ -179,50 +183,92 @@ const handlecloseDevDialog = () => {
 };
 
 const runSearch = async () => {
-  searchList.value = await Monaco.runSearch();
+  try {
+    result.value = await Monaco.runSearch();
+    searchList.value = result.value;
+  } catch (error) {
+    ElMessage.error(`运行search失败: ${error.message}`);
+    console.error("运行search失败:", error);
+  }
 };
 
 const runDetail = async () => {
-  const url = await Monaco.runDetails();
+  try {
+    if (searchList.value.length === 0) {
+      ElMessage.warning("请先运行search获取列表");
+      return;
+    }
+    const url = searchList.value[0].href;
+    const detail = await Monaco.runDetails(url);
+    detailInfo.value = detail;
+    result.value = detail;
+  } catch (error) {
+    ElMessage.error(`运行detail失败: ${error.message}`);
+    console.error("运行detail失败:", error);
+  }
 };
 
 const runPlay = async () => {
-  const url = searchList.value[0].href;
-  await Monaco.runPlay(url);
+  try {
+    if (searchList.value.length === 0) {
+      ElMessage.warning("请先运行search获取列表");
+      return;
+    }
+    const url = searchList.value[0].href;
+    const playInfo = await Monaco.runPlay(url);
+    result.value = playInfo;
+  } catch (error) {
+    ElMessage.error(`运行play失败: ${error.message}`);
+    console.error("运行play失败:", error);
+  }
 };
 
 // 从URL导入插件
 async function importPlugin() {
-  if (!pluginUrl.value.trim()) return;
+  if (!pluginUrl.value.trim()) {
+    ElMessage.warning("请输入插件URL");
+    return;
+  }
+
   isImporting.value = true;
   try {
     await pluginsStore.importPluginFromUrl(pluginUrl.value);
+    ElMessage.success("插件导入成功");
     pluginUrl.value = "";
     showImportDialog.value = false; // 导入成功后关闭对话框
   } catch (error) {
+    ElMessage.error(`导入插件失败: ${error.message}`);
     console.error("导入插件出错:", error);
   } finally {
     isImporting.value = false;
-    console.log(plugins.value);
   }
 }
 
 const setPlugin = async (plugin) => {
-  config.value.active_plugin = plugin.file_name;
-  await Config.setConfiguration(config.value);
+  try {
+    config.value.active_plugin = plugin.file_name;
+    await Config.setConfiguration(config.value);
+    ElMessage.success(`已启用插件: ${plugin.name}`);
+  } catch (error) {
+    ElMessage.error(`设置插件失败: ${error.message}`);
+    console.error("设置插件失败:", error);
+  }
 };
 
-// 清空日志
-function clearLogs() {
-  logs.value = [];
-}
+// 移除未使用的 clearLogs 函数
 
 onMounted(async () => {
-  // pluginsStore.loadPlugins();
-  config.value = await Config.getConfiguration();
+  try {
+    await pluginsStore.loadPlugins();
+    config.value = await Config.getConfiguration();
+  } catch (error) {
+    console.error("初始化失败:", error);
+  }
 });
 
-onBeforeUnmount(() => {});
+onBeforeUnmount(() => {
+  Monaco.dispose();
+});
 </script>
 
 <style lang="less">
@@ -301,74 +347,117 @@ onBeforeUnmount(() => {});
     gap: 10px;
   }
 
-  // 插件开发相关样式
-  .dev-container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 120px);
-
-    .editor-container {
-      flex: 1;
-      min-height: 60%;
-      border: 1px solid #dcdfe6;
-      border-radius: 4px;
-      overflow: hidden;
-
-      .monaco-editor {
-        height: 100%;
-        min-height: 400px;
-      }
+  .dev-dialog {
+    background: black;
+    header {
+      display: none;
     }
-
-    .console-container {
-      height: 250px;
-      margin-top: 15px;
-      border: 1px solid #dcdfe6;
-      border-radius: 4px;
+    // 插件开发相关样式
+    .dev-container {
       display: flex;
       flex-direction: column;
+      height: calc(100vh - 0px);
+      overflow: hidden;
+      position: relative;
+      .dev-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 90;
+        width: calc(100% - 40px);
+        padding: 5px 20px !important;
+        transition: opacity 0.3s ease;
 
-      .console-header {
-        display: flex;
-        align-items: center;
-        padding: 8px 15px;
-        border-bottom: 1px solid #dcdfe6;
-        background-color: #f5f7fa;
-
-        h4 {
-          margin: 0;
-          margin-right: auto;
+        &.controls-hidden {
+          opacity: 0;
+          pointer-events: none;
         }
 
-        .el-button {
-          margin-left: 10px;
+        .tv-style-title {
+          display: inline-block;
+          font-size: 18px;
+          font-weight: 500;
+          color: #ffffff;
+          background-color: rgba(0, 0, 0, 0.5);
+          padding: 6px 12px;
+          border-radius: 4px;
+          margin-right: 10px;
+          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+          letter-spacing: 1px;
+          backdrop-filter: blur(2px);
+          border-left: 3px solid #409eff;
+        }
+
+        .player-header-close {
+          position: absolute;
+          top: 10px;
+          right: 20px;
+          font-size: 18px;
+          background-color: rgba(255, 255, 255, 0.6);
+          border: none;
+          color: #ffffff;
+          opacity: 1;
+
+          .el-icon {
+            transition: all 0.2s ease;
+          }
+
+          &:hover {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.5);
+
+            .el-icon {
+              transform: scale(1.1);
+            }
+          }
+        }
+      }
+      .editor-container {
+        flex: 1;
+        height: 80%;
+        // border: 1px solid #dcdfe6;
+        // border-radius: 4px;
+        overflow: hidden;
+
+        .monaco-editor {
+          height: 100%;
+          min-height: 400px;
         }
       }
 
-      .console-output {
-        flex: 1;
-        padding: 10px;
-        overflow-y: auto;
-        background-color: #1e1e1e;
-        color: #d4d4d4;
-        font-family: monospace;
+      .console-container {
+        min-height: 260px;
+        height: 20%;
 
-        .log-item {
-          padding: 3px 0;
-          white-space: pre-wrap;
-          word-break: break-all;
+        // border: 1px solid #dcdfe6;
+        // border-radius: 4px;
+        display: flex;
+        flex-direction: column;
 
-          &.info {
-            color: #d4d4d4;
+        .console-header {
+          display: flex;
+          align-items: center;
+          padding: 8px 15px;
+          // border-bottom: 1px solid #dcdfe6;
+          background-color: #f5f7fa;
+
+          h4 {
+            margin: 0;
+            margin-right: auto;
           }
 
-          &.success {
-            color: #4caf50;
+          .el-button {
+            margin-left: 10px;
           }
+        }
 
-          &.error {
-            color: #f44336;
-          }
+        .console-output {
+          flex: 1;
+          padding: 10px;
+          overflow-y: auto;
+          background-color: #1e1e1e;
+          color: #d4d4d4;
+          font-family: monospace;
         }
       }
     }
