@@ -3,10 +3,23 @@ import * as cheerio from "cheerio";
 import { IPlugin, IResult } from "../const/interface";
 import File from "./file";
 import Config from "./config";
-import { PLUGIN_FOLDER_NAME } from "../const/const";
+import { PLUGIN_FOLDER_NAME, DRAFT_PLUGIN_FILE } from "../const/const";
 
 export default class Plugin {
   static _currentPlugin: IPlugin;
+
+  static async getDraftPlugin() {
+    const res = (await File._readFile(DRAFT_PLUGIN_FILE)) as IResult;
+    if (!res.success) {
+      return "";
+    } else {
+      return res.data;
+    }
+  }
+
+  static async setDraftPlugin(content: string) {
+    await File._writeFile(DRAFT_PLUGIN_FILE, content);
+  }
 
   static async getPlugins() {
     const entries = await File._readDir(PLUGIN_FOLDER_NAME);

@@ -16,24 +16,44 @@ export default class Monaco {
    */
   static create(
     container: HTMLElement,
-    options: monaco.editor.IStandaloneEditorConstructionOptions = {}
+    options: monaco.editor.IStandaloneEditorConstructionOptions = {},
+    value?: string,
+    onBlur?: Function
   ): monaco.editor.IStandaloneCodeEditor {
     this.container = container;
 
     const defaultOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
-      value: `
+      value:
+        value ||
+        `
 (() => {
   return {
-    name: "xxx",
+    name: "lzrs",
     description: "xxxxxx",
     version: "1.0.0",
-    author: "xxx",
+    author: "lzrs.cc",
     search: {
-      url: "https://xxx?xxx={keyword}xxx",
+      url: "https://xxxxxx?wd={keyword}",
       description: "获取搜索列表",
       parse: function (html) {
         const $ = cheerio.load(html);
-        const listItems = [];
+        const listItems = $(".module-items .module-item")
+                    .map((index, element) => {
+                        // 或者获取元素的特定属性
+                        const href = $(element).find(".module-card-item-title a").attr("href");
+                        const title = $(element).find(".module-card-item-title").text().trim();
+                        const thumbnail = $(element).find(".module-item-pic img").data("original");
+                        const score = $(element).find(".pic-tag-top").text().trim();
+                        // 返回你需要的数据结构
+                        return {
+                            title,
+                            href: "https://lzrs.cc" + href,
+                            thumbnail,
+                            score:'--',
+                            source: "lzrs",
+                        };
+                    })
+                    .get();
         return listItems;
       },
     },
@@ -41,17 +61,16 @@ export default class Monaco {
       description: "详情页面，获取播放地址",
       parse: function (html) {
         const $ = cheerio.load(html);
-        const playUrl = "";
-        return playUrl;
+        const playUrl = $('.module-info-content').find(".module-info-play a").attr("href");
+        return "https://lzrs.cc" + playUrl;
       },
     },
     play: {
       description: "播放页面，获取真实播放地址",
       mediaType: "m3u8",
-      parse: function (html) {
-        const $ = cheerio.load(html);
-        const source = "";
-        return source;
+      parse: function (html) {                
+                let url = '';
+                return url;
       },
     },
   };
@@ -74,6 +93,9 @@ export default class Monaco {
     this.editor = monaco.editor.create(container, {
       ...defaultOptions,
       ...options,
+    });
+    this.editor.onDidBlurEditorText(() => {
+      onBlur && onBlur();
     });
 
     return this.editor;
@@ -149,7 +171,19 @@ export default class Monaco {
     return list;
   }
 
-  static async runDetails() {}
+  static async runDetails(detail_url: string) {
+    //@ts-ignore
+    window.cheerio = cheerio;
+    const value = this.getValue().trim();
+    const func = eval(value) as IPlugin;
+    const detail = func.detail;
+    const res = (await this._fetchIPC(detail_url as string)) as IResult;
+    if (!res.success) {
+      return res;
+    }
+    const play_url = detail.parse(res.data);
+    return play_url;
+  }
 
   static async runPlay(play_url: string) {
     //@ts-ignore

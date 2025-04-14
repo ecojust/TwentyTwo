@@ -2,14 +2,11 @@
   <div class="plugins-view">
     <el-card>
       <template #header>
-        <div class="view-header">
+        <div class="view-header" v-on="longPress()">
           <h2>插件管理</h2>
           <div>
             <el-button type="primary" @click="showImportDialog = true"
               >导入插件</el-button
-            >
-            <el-button type="primary" @click="handleOpenEditorDialog"
-              >插件调试</el-button
             >
           </div>
         </div>
@@ -119,13 +116,25 @@
         <div class="console-container">
           <div class="console-header">
             <h4>控制台</h4>
-            <el-button type="primary" size="small" @click="runSearch"
+            <el-button
+              v-show="showSearch"
+              type="primary"
+              size="small"
+              @click="runSearch"
               >运行search</el-button
             >
-            <el-button type="success" size="small" @click="runDetail"
+            <el-button
+              v-show="showDetail"
+              type="success"
+              size="small"
+              @click="runDetail"
               >运行detail</el-button
             >
-            <el-button type="warning" size="small" @click="runPlay"
+            <el-button
+              v-show="showPlay"
+              type="warning"
+              size="small"
+              @click="runPlay"
               >运行play</el-button
             >
           </div>
@@ -147,8 +156,14 @@ import Config from "../tool/config";
 import { ElMessage } from "element-plus";
 import Monaco from "../tool/monaco";
 import { Close } from "@element-plus/icons-vue";
+import Event from "../tool/event";
+import Plugin from "../tool/plugin";
 
 const pluginsStore = usePluginsStore();
+
+const longPress = () => {
+  return Event.longPress(1000, handleOpenEditorDialog).value;
+};
 
 const monacoContainer = ref(null);
 const consoleOutput = ref(null);
@@ -166,14 +181,38 @@ const config = ref({
 });
 // 简化测试数据
 const result = ref([]);
-
 const plugins = computed(() => pluginsStore.plugins);
+const showSearch = ref(true);
+const showDetail = ref(true);
+const showPlay = ref(true);
 
 const handleOpenEditorDialog = () => {
   showDevDialog.value = true;
-  nextTick(() => {
+  nextTick(async () => {
     if (monacoContainer.value) {
-      Monaco.create(monacoContainer.value);
+      const content = await Plugin.getDraftPlugin();
+
+      console.log("content", content);
+      Monaco.create(monacoContainer.value, {}, content, () => {
+        const content = Monaco.getValue().trim();
+        Plugin.setDraftPlugin(content);
+        const obj = eval(content);
+        if (obj) {
+          showSearch.value = Object.prototype.hasOwnProperty.call(
+            obj,
+            "search"
+          );
+          showDetail.value = Object.prototype.hasOwnProperty.call(
+            obj,
+            "detail"
+          );
+          showPlay.value = Object.prototype.hasOwnProperty.call(obj, "play");
+        } else {
+          showSearch.value = false;
+          showDetail.value = false;
+          showPlay.value = false;
+        }
+      });
     }
   });
 };
@@ -210,11 +249,7 @@ const runDetail = async () => {
 
 const runPlay = async () => {
   try {
-    if (searchList.value.length === 0) {
-      ElMessage.warning("请先运行search获取列表");
-      return;
-    }
-    const url = searchList.value[0].href;
+    const url = detailInfo.value;
     const playInfo = await Monaco.runPlay(url);
     result.value = playInfo;
   } catch (error) {
@@ -233,11 +268,9 @@ async function importPlugin() {
   isImporting.value = true;
   try {
     await pluginsStore.importPluginFromUrl(pluginUrl.value);
-    ElMessage.success("插件导入成功");
     pluginUrl.value = "";
-    showImportDialog.value = false; // 导入成功后关闭对话框
+    showImportDialog.value = false;
   } catch (error) {
-    ElMessage.error(`导入插件失败: ${error.message}`);
     console.error("导入插件出错:", error);
   } finally {
     isImporting.value = false;
