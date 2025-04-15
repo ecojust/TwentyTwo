@@ -71,10 +71,10 @@ jobs:
       - name: Install Android NDK
         run: |
           # 使用 cmdline-tools 安装 NDK
-          $env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat --install "ndk;25.1.8937393" --sdk_root=$env:ANDROID_HOME
+          & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" --install "ndk;25.1.8937393" --sdk_root="$env:ANDROID_HOME"
           # 设置 NDK_HOME 环境变量
-          echo "NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" >> $env:GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" >> $env:GITHUB_ENV
+          echo "NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "ANDROID_NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       # 修改版本号生成逻辑
       - name: Get date and run number
