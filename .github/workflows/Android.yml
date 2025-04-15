@@ -94,12 +94,6 @@ jobs:
           # 初始化 Android 环境
           yarn run tauri android init
 
-      - name: Android dev
-        run: |
-          echo "NDK_HOME: $NDK_HOME"
-          echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
-          yarn run tauri android dev
-
       - name: Android build
         run: |
           # 设置 OpenSSL 环境变量
