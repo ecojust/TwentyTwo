@@ -44,13 +44,13 @@ jobs:
         with:
           node-version: "lts/*"
 
-      # Install pnpm globally
+        # Install yarn globally
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: npm install -g yarn
 
       # Install frontend dependencies
       - name: Install frontend dependencies
-        run: pnpm install
+        run: yarn install
 
       - name: install dependencies (ubuntu only)
         run: |
@@ -83,17 +83,13 @@ jobs:
         run: |
           echo "bundle_version=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
-      # 修改构建步骤
-      - name: Build the app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: build --target ${{ matrix.args }} --verbose
-          # 移除不支持的参数
-          # androidBuildTool: gradle
-          # androidGradleTasks: assembleRelease
-          # 不需要签名配置，移除相关内容
+      - name: Android init
+        run: |
+          yarn run tauri android init
+
+      - name: Android build
+        run: |
+          yarn run tauri android build
 
       # 添加发布到GitHub Release的步骤
       - name: Create Release
