@@ -1,4 +1,4 @@
-name: Build and release
+name: Desktop
 on:
   push:
     branches: [master]
@@ -104,7 +104,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: "v__VERSION__-${{ steps.date_run.outputs.date }}-${{ steps.date_run.outputs.number }}"
-          releaseName: "VideoSearch-__VERSION__ (${{ steps.date_run.outputs.date }}#${{ steps.date_run.outputs.number }})"
+          releaseName: "__VERSION__ (${{ steps.date_run.outputs.date }}#${{ steps.date_run.outputs.number }})"
           releaseBody: |
             commit id: ${{ steps.date_run.outputs.commit_sha }}
             commit message: ${{ steps.date_run.outputs.commit_message }}

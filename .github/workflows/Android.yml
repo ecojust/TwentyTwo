@@ -1,0 +1,115 @@
+name: Android
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  release:
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+      deployments: write
+      packages: write
+      id-token: write
+    strategy:
+      matrix:
+        include:
+          - platform: "ubuntu-22.04"
+            args: "--target armv7-linux-androideabi,aarch64-linux-android" # 添加多架构支持
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史以便正确生成版本号
+
+      # Rust setup
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+
+      # Rust cache
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      # Sync node version and setup cache
+      - name: Sync node version and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      # Install pnpm globally
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # Install frontend dependencies
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: install dependencies (ubuntu only)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install Android dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lib32z1 patchelf
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Install Android NDK
+        run: |
+          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager "ndk;25.1.8937393"
+
+      # 修改版本号生成逻辑
+      - name: Get date and run number
+        id: version # 添加id属性
+        run: |
+          echo "bundle_version=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      # 修改构建步骤
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: build --target ${{ matrix.args }} --verbose
+          androidBuildTool: gradle
+          androidGradleTasks: assembleRelease
+          # 不需要签名配置，移除相关内容
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-app
+          path: |
+            src-tauri/target/android/**/*.apk
+            src-tauri/target/android/**/*.aab
+
+      # 添加发布到GitHub Release的步骤
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            src-tauri/target/android/**/*.apk
+            src-tauri/target/android/**/*.aab
+          name: Release ${{ github.ref_name }}
+          body: |
+            Android 应用版本 ${{ steps.version.outputs.bundle_version }}
+
+            自动构建发布
