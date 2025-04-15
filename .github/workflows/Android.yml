@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: "ubuntu-22.04"
+          - platform: "windows-latest"
             args: "--target armv7-linux-androideabi,aarch64-linux-android" # 添加多架构支持
 
     runs-on: ${{ matrix.platform }}
@@ -44,23 +44,19 @@ jobs:
         with:
           node-version: "lts/*"
 
-        # Install yarn globally
-      - name: Install pnpm
+      # Install yarn globally
+      - name: Install yarn
         run: npm install -g yarn
 
       # Install frontend dependencies
       - name: Install frontend dependencies
         run: yarn install
 
-      - name: install dependencies (ubuntu only)
+      # Windows 环境不需要安装 Ubuntu 特定的依赖
+      # 安装 Windows 上需要的依赖
+      - name: Install Windows dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
-
-      - name: Install Android dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lib32z1 patchelf
+          choco install openssl
 
       - name: Setup JDK
         uses: actions/setup-java@v3
@@ -71,40 +67,34 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      # 修改 NDK 安装方式
+      # 修改 NDK 安装方式 (Windows 路径格式)
       - name: Install Android NDK
         run: |
           # 使用 cmdline-tools 安装 NDK
-          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" --sdk_root=${ANDROID_HOME}
+          $env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat --install "ndk;25.1.8937393" --sdk_root=$env:ANDROID_HOME
           # 设置 NDK_HOME 环境变量
-          echo "NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
+          echo "NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" >> $env:GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" >> $env:GITHUB_ENV
 
       # 修改版本号生成逻辑
       - name: Get date and run number
         id: version # 添加id属性
         run: |
-          echo "bundle_version=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "bundle_version=0.0.${{ github.run_number }}" >> $env:GITHUB_OUTPUT
 
       - name: Android init
         run: |
           # 显示 NDK 路径
-          echo "NDK_HOME: $NDK_HOME"
-          echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
+          echo "NDK_HOME: $env:NDK_HOME"
+          echo "ANDROID_NDK_HOME: $env:ANDROID_NDK_HOME"
           # 初始化 Android 环境
           yarn run tauri android init
 
-      - name: Android dev
-        run: |
-          echo "NDK_HOME: $NDK_HOME"
-          echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
-          yarn run tauri android dev
-
       - name: Android build
         run: |
-          # 设置 OpenSSL 环境变量
-          export OPENSSL_DIR=/usr/include/openssl
-          export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu
+          # 设置 OpenSSL 环境变量 (Windows 路径)
+          $env:OPENSSL_DIR = "C:\Program Files\OpenSSL-Win64"
+          $env:OPENSSL_LIB_DIR = "C:\Program Files\OpenSSL-Win64\lib"
           # 构建 Android 应用
           yarn run tauri android build
 
