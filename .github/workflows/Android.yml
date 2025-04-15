@@ -92,14 +92,6 @@ jobs:
           androidGradleTasks: assembleRelease
           # 不需要签名配置，移除相关内容
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: android-app
-          path: |
-            src-tauri/target/android/**/*.apk
-            src-tauri/target/android/**/*.aab
-
       # 添加发布到GitHub Release的步骤
       - name: Create Release
         uses: softprops/action-gh-release@v1
