@@ -70,6 +70,14 @@ jobs:
           .\vcpkg.exe install openssl:x64-windows
           echo "VCPKG_ROOT=$pwd" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+      - name: Android init
+        run: |
+          # 显示 NDK 路径
+          echo "NDK_HOME: $env:NDK_HOME"
+          echo "ANDROID_NDK_HOME: $env:ANDROID_NDK_HOME"
+          # 初始化 Android 环境
+          yarn run tauri android init
+
       # 修改 Android build 步骤
       - name: Android build
         run: |
