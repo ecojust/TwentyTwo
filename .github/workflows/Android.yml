@@ -49,14 +49,35 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
+          cache: 'yarn' # 启用 yarn 缓存
 
       # Install yarn globally
       - name: Install yarn
         run: npm install -g yarn
 
+      # 缓存 node_modules
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-modules-
+
       # Install frontend dependencies
       - name: Install frontend dependencies
         run: yarn install
+
+      # 缓存 vcpkg
+      - name: Cache vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            vcpkg
+            ${{ github.workspace }}/vcpkg
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/vcpkg.json', '**/vcpkg.lock') || github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
 
       # Windows 环境不需要安装 Ubuntu 特定的依赖
       # 安装 Windows 上需要的依赖
@@ -64,9 +85,13 @@ jobs:
         run: |
           choco install openssl
           # 安装 vcpkg 以便更好地管理 C/C++ 库
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          .\bootstrap-vcpkg.bat
+          if (-not (Test-Path vcpkg)) {
+            git clone https://github.com/microsoft/vcpkg.git
+            cd vcpkg
+            .\bootstrap-vcpkg.bat
+          } else {
+            cd vcpkg
+          }
           .\vcpkg.exe install openssl:x64-windows
           echo "VCPKG_ROOT=$pwd" | Out-File -FilePath $env:GITHUB_ENV -Append
           
@@ -75,15 +100,37 @@ jobs:
         with:
           java-version: "17"
           distribution: "temurin"
+          cache: 'gradle' # 启用 Gradle 缓存
+
+      # 缓存 Android SDK
+      - name: Cache Android SDK
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.ANDROID_HOME }}
+          key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-android-sdk-
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
         
+      # 缓存 Android NDK
+      - name: Cache Android NDK
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk/25.1.8937393
+          key: ${{ runner.os }}-android-ndk-25.1.8937393
+          restore-keys: |
+            ${{ runner.os }}-android-ndk-
+        
       # 添加 NDK 安装步骤
       - name: Install Android NDK
         run: |
-          # 使用 cmdline-tools 安装 NDK
-          & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" --install "ndk;25.1.8937393" --sdk_root="$env:ANDROID_HOME"
+          # 检查 NDK 是否已存在
+          if (-not (Test-Path "$env:ANDROID_HOME\ndk\25.1.8937393")) {
+            # 使用 cmdline-tools 安装 NDK
+            & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" --install "ndk;25.1.8937393" --sdk_root="$env:ANDROID_HOME"
+          }
           # 设置 NDK_HOME 环境变量
           echo "NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "ANDROID_NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
