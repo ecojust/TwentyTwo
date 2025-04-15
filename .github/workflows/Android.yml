@@ -69,6 +69,30 @@ jobs:
           .\bootstrap-vcpkg.bat
           .\vcpkg.exe install openssl:x64-windows
           echo "VCPKG_ROOT=$pwd" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+        
+      # 添加 NDK 安装步骤
+      - name: Install Android NDK
+        run: |
+          # 使用 cmdline-tools 安装 NDK
+          & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" --install "ndk;25.1.8937393" --sdk_root="$env:ANDROID_HOME"
+          # 设置 NDK_HOME 环境变量
+          echo "NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "ANDROID_NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+      # 修改版本号生成逻辑
+      - name: Get date and run number
+        id: version # 添加id属性
+        run: |
+          echo "bundle_version=0.0.${{ github.run_number }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Android init
         run: |
