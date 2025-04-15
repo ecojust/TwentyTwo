@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: "windows-latest"
+          - platform: "ubuntu-22.04"
             args: "--target armv7-linux-androideabi,aarch64-linux-android" # 添加多架构支持
 
     runs-on: ${{ matrix.platform }}
@@ -38,159 +38,75 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
-      # 添加 Android 目标支持
-      - name: Add Android targets
-        run: |
-          rustup target add armv7-linux-androideabi
-          rustup target add aarch64-linux-android
-
       # Sync node version and setup cache
       - name: Sync node version and setup cache
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
-          cache: "yarn" # 启用 yarn 缓存
 
-      # Install yarn globally
-      - name: Install yarn
+        # Install yarn globally
+      - name: Install pnpm
         run: npm install -g yarn
-
-      # 缓存 node_modules
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-modules-
 
       # Install frontend dependencies
       - name: Install frontend dependencies
         run: yarn install
 
-      # 缓存 vcpkg
-      - name: Cache vcpkg
-        uses: actions/cache@v3
-        with:
-          path: |
-            vcpkg
-            ${{ github.workspace }}/vcpkg
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/vcpkg.json', '**/vcpkg.lock') || github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-
-
-      # Windows 环境不需要安装 Ubuntu 特定的依赖
-      # 安装 Windows 上需要的依赖
-      - name: Install Windows dependencies
+      - name: install dependencies (ubuntu only)
         run: |
-          # 安装 vcpkg 以便更好地管理 C/C++ 库
-          if (-not (Test-Path vcpkg)) {
-            git clone https://github.com/microsoft/vcpkg.git
-            cd vcpkg
-            .\bootstrap-vcpkg.bat
-          } else {
-            cd vcpkg
-          }
-          
-          # 安装静态版本的 OpenSSL
-          .\vcpkg.exe install openssl:x64-windows-static
-          
-          # 使用绝对路径设置 VCPKG_ROOT
-          $vcpkgRoot = (Get-Item .).FullName
-          echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
-          
-          # 安装预编译的 OpenSSL 二进制文件作为备选方案
-          choco install openssl -y
-          $opensslPath = "C:\Program Files\OpenSSL-Win64"
-          echo "OPENSSL_WIN64_PATH=$opensslPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+
+      - name: Install Android dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lib32z1 patchelf
 
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
           java-version: "17"
           distribution: "temurin"
-          # 移除 gradle 缓存配置，因为项目中可能没有标准的 gradle 文件
-          # cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      # 添加 NDK 安装步骤
+      # 修改 NDK 安装方式
       - name: Install Android NDK
         run: |
-          # 检查 NDK 是否已存在
-          if (-not (Test-Path "$env:ANDROID_HOME\ndk\25.1.8937393")) {
-            # 使用 cmdline-tools 安装 NDK
-            & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" --install "ndk;25.1.8937393" --sdk_root="$env:ANDROID_HOME"
-          }
+          # 使用 cmdline-tools 安装 NDK
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" --sdk_root=${ANDROID_HOME}
           # 设置 NDK_HOME 环境变量
-          echo "NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "ANDROID_NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
 
       # 修改版本号生成逻辑
       - name: Get date and run number
         id: version # 添加id属性
         run: |
-          echo "bundle_version=0.0.${{ github.run_number }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          echo "bundle_version=0.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - name: Android init
         run: |
           # 显示 NDK 路径
-          echo "NDK_HOME: $env:NDK_HOME"
-          echo "ANDROID_NDK_HOME: $env:ANDROID_NDK_HOME"
+          echo "NDK_HOME: $NDK_HOME"
+          echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
           # 初始化 Android 环境
           yarn run tauri android init
 
-      # 修改 Android build 步骤
+      - name: Android dev
+        run: |
+          echo "NDK_HOME: $NDK_HOME"
+          echo "ANDROID_NDK_HOME: $ANDROID_NDK_HOME"
+          yarn run tauri android dev
+
       - name: Android build
         run: |
-          # 尝试使用 vcpkg 安装的静态库
-          $env:OPENSSL_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static\include"
-          
-          # 为交叉编译设置环境变量
-          $env:OPENSSL_STATIC = "true"
-          
-          # 显示环境变量和目录内容
-          echo "VCPKG_ROOT: $env:VCPKG_ROOT"
-          echo "OPENSSL_DIR: $env:OPENSSL_DIR"
-          echo "OPENSSL_LIB_DIR: $env:OPENSSL_LIB_DIR"
-          echo "OPENSSL_INCLUDE_DIR: $env:OPENSSL_INCLUDE_DIR"
-          
-          # 检查库文件
-          echo "检查 OpenSSL 库文件..."
-          Get-ChildItem "$env:OPENSSL_LIB_DIR" | ForEach-Object { echo $_.Name }
-          
-          # 设置额外的 Rust 环境变量
-          $env:RUSTFLAGS = "-L $env:OPENSSL_LIB_DIR"
-          
-          # 尝试构建
-          try {
-            yarn run tauri android build
-          } catch {
-            echo "使用 vcpkg 的 OpenSSL 构建失败，尝试使用 Chocolatey 安装的 OpenSSL..."
-            
-            # 使用 Chocolatey 安装的 OpenSSL
-            $env:OPENSSL_DIR = "$env:OPENSSL_WIN64_PATH"
-            $env:OPENSSL_LIB_DIR = "$env:OPENSSL_WIN64_PATH\lib"
-            $env:OPENSSL_INCLUDE_DIR = "$env:OPENSSL_WIN64_PATH\include"
-            $env:OPENSSL_STATIC = "false"  # 切换到动态链接
-            
-            echo "新的 OPENSSL_DIR: $env:OPENSSL_DIR"
-            echo "新的 OPENSSL_LIB_DIR: $env:OPENSSL_LIB_DIR"
-            echo "新的 OPENSSL_INCLUDE_DIR: $env:OPENSSL_INCLUDE_DIR"
-            
-            # 检查库文件
-            echo "检查新的 OpenSSL 库文件..."
-            Get-ChildItem "$env:OPENSSL_LIB_DIR" | ForEach-Object { echo $_.Name }
-            
-            # 重新设置 RUSTFLAGS
-            $env:RUSTFLAGS = "-L $env:OPENSSL_LIB_DIR"
-            
-            # 再次尝试构建
-            yarn run tauri android build
-          }
+          # 设置 OpenSSL 环境变量
+          export OPENSSL_DIR=/usr/include/openssl
+          export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu
+          # 构建 Android 应用
+          yarn run tauri android build
 
       # 添加发布到GitHub Release的步骤
       - name: Create Release
