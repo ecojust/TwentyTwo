@@ -97,8 +97,10 @@ jobs:
       - name: Android build
         run: |
           # 设置 OpenSSL 环境变量
-          export OPENSSL_DIR=/usr/include/openssl
+          export OPENSSL_DIR=/usr
           export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu
+          # 添加调试信息
+          ls -la /usr/include/openssl
           # 构建 Android 应用
           yarn run tauri android build
 
