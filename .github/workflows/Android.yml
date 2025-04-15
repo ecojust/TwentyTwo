@@ -90,8 +90,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: build --target ${{ matrix.args }} --verbose
-          androidBuildTool: gradle
-          androidGradleTasks: assembleRelease
+          # 移除不支持的参数
+          # androidBuildTool: gradle
+          # androidGradleTasks: assembleRelease
           # 不需要签名配置，移除相关内容
 
       # 添加发布到GitHub Release的步骤
