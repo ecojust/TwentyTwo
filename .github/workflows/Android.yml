@@ -98,14 +98,19 @@ jobs:
 
       - name: Android build
         run: |
-          # 设置 OpenSSL 环境变量
+          # 设置 OpenSSL 环境变量 - 修正为符合官方要求的格式
+          # OPENSSL_DIR 应指向包含 lib 和 include 子目录的目录
           export OPENSSL_DIR=/usr
-          export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu
-          export OPENSSL_INCLUDE_DIR=/usr/include/openssl
+          # 不再需要单独设置这些，因为它们会从 OPENSSL_DIR 派生
+          # export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu
+          # export OPENSSL_INCLUDE_DIR=/usr/include/openssl
+          
           # 添加调试信息
-          ls -la /usr/include/openssl
-          # 使用 pkg-config 检查 OpenSSL 配置
-          pkg-config --libs --cflags openssl || echo "pkg-config for openssl failed"
+          echo "检查 OpenSSL 目录结构:"
+          ls -la /usr/include | grep openssl
+          ls -la /usr/lib/x86_64-linux-gnu | grep libssl
+          ls -la /usr/include/openssl | grep opensslv.h
+          
           # 构建 Android 应用
           RUST_BACKTRACE=1 yarn run tauri android build
 
