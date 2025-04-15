@@ -71,9 +71,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
+      # 修改 NDK 安装方式
       - name: Install Android NDK
         run: |
-          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager "ndk;25.1.8937393"
+          # 使用 cmdline-tools 安装 NDK
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" --sdk_root=${ANDROID_HOME}
 
       # 修改版本号生成逻辑
       - name: Get date and run number
