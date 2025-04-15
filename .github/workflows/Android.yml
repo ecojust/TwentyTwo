@@ -38,6 +38,12 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
+      # 添加 Android 目标支持
+      - name: Add Android targets
+        run: |
+          rustup target add armv7-linux-androideabi
+          rustup target add aarch64-linux-android
+
       # Sync node version and setup cache
       - name: Sync node version and setup cache
         uses: actions/setup-node@v4
@@ -57,44 +63,29 @@ jobs:
       - name: Install Windows dependencies
         run: |
           choco install openssl
+          # 安装 vcpkg 以便更好地管理 C/C++ 库
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
+          .\vcpkg.exe install openssl:x64-windows
+          echo "VCPKG_ROOT=$pwd" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: "17"
-          distribution: "temurin"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
-
-      # 修改 NDK 安装方式 (Windows 路径格式)
-      - name: Install Android NDK
-        run: |
-          # 使用 cmdline-tools 安装 NDK
-          & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.bat" --install "ndk;25.1.8937393" --sdk_root="$env:ANDROID_HOME"
-          # 设置 NDK_HOME 环境变量
-          echo "NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "ANDROID_NDK_HOME=$env:ANDROID_HOME\ndk\25.1.8937393" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-      # 修改版本号生成逻辑
-      - name: Get date and run number
-        id: version # 添加id属性
-        run: |
-          echo "bundle_version=0.0.${{ github.run_number }}" >> $env:GITHUB_OUTPUT
-
-      - name: Android init
-        run: |
-          # 显示 NDK 路径
-          echo "NDK_HOME: $env:NDK_HOME"
-          echo "ANDROID_NDK_HOME: $env:ANDROID_NDK_HOME"
-          # 初始化 Android 环境
-          yarn run tauri android init
-
+      # 修改 Android build 步骤
       - name: Android build
         run: |
           # 设置 OpenSSL 环境变量 (Windows 路径)
-          $env:OPENSSL_DIR = "C:\Program Files\OpenSSL-Win64"
-          $env:OPENSSL_LIB_DIR = "C:\Program Files\OpenSSL-Win64\lib"
+          $env:OPENSSL_DIR = "$env:VCPKG_ROOT\installed\x64-windows"
+          $env:OPENSSL_LIB_DIR = "$env:VCPKG_ROOT\installed\x64-windows\lib"
+          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_ROOT\installed\x64-windows\include"
+
+          # 为交叉编译设置环境变量
+          $env:OPENSSL_STATIC = "true"
+
+          # 显示环境变量
+          echo "OPENSSL_DIR: $env:OPENSSL_DIR"
+          echo "OPENSSL_LIB_DIR: $env:OPENSSL_LIB_DIR"
+          echo "OPENSSL_INCLUDE_DIR: $env:OPENSSL_INCLUDE_DIR"
+
           # 构建 Android 应用
           yarn run tauri android build
 
