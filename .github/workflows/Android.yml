@@ -92,8 +92,9 @@ jobs:
           } else {
             cd vcpkg
           }
-          .\vcpkg.exe install openssl:x64-windows
-          echo "VCPKG_ROOT=$pwd" | Out-File -FilePath $env:GITHUB_ENV -Append
+          .\vcpkg.exe install openssl:x64-windows-static
+          # 使用绝对路径设置 VCPKG_ROOT
+          echo "VCPKG_ROOT=$((Get-Item .).FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Setup JDK
         uses: actions/setup-java@v3
@@ -136,18 +137,31 @@ jobs:
       - name: Android build
         run: |
           # 设置 OpenSSL 环境变量 (Windows 路径)
-          $env:OPENSSL_DIR = "$env:VCPKG_ROOT\installed\x64-windows"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_ROOT\installed\x64-windows\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_ROOT\installed\x64-windows\include"
-
+          $env:OPENSSL_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static"
+          $env:OPENSSL_LIB_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static\lib"
+          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static\include"
+          
           # 为交叉编译设置环境变量
           $env:OPENSSL_STATIC = "true"
-
+          
+          # 添加额外的链接标志
+          $env:RUSTFLAGS = "-C link-arg=-fuse-ld=lld"
+          
           # 显示环境变量
+          echo "VCPKG_ROOT: $env:VCPKG_ROOT"
           echo "OPENSSL_DIR: $env:OPENSSL_DIR"
           echo "OPENSSL_LIB_DIR: $env:OPENSSL_LIB_DIR"
           echo "OPENSSL_INCLUDE_DIR: $env:OPENSSL_INCLUDE_DIR"
-
+          echo "OPENSSL_STATIC: $env:OPENSSL_STATIC"
+          
+          # 检查 OpenSSL 库文件是否存在
+          if (Test-Path "$env:OPENSSL_LIB_DIR\libssl.lib") {
+            echo "libssl.lib 文件存在"
+          } else {
+            echo "警告: libssl.lib 文件不存在!"
+            Get-ChildItem "$env:OPENSSL_LIB_DIR" -Recurse | Select-Object FullName
+          }
+          
           # 构建 Android 应用
           yarn run tauri android build
 
