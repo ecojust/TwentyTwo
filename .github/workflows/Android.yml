@@ -83,7 +83,6 @@ jobs:
       # 安装 Windows 上需要的依赖
       - name: Install Windows dependencies
         run: |
-          choco install openssl
           # 安装 vcpkg 以便更好地管理 C/C++ 库
           if (-not (Test-Path vcpkg)) {
             git clone https://github.com/microsoft/vcpkg.git
@@ -92,9 +91,18 @@ jobs:
           } else {
             cd vcpkg
           }
+          
+          # 安装静态版本的 OpenSSL
           .\vcpkg.exe install openssl:x64-windows-static
+          
           # 使用绝对路径设置 VCPKG_ROOT
-          echo "VCPKG_ROOT=$((Get-Item .).FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $vcpkgRoot = (Get-Item .).FullName
+          echo "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
+          # 安装预编译的 OpenSSL 二进制文件作为备选方案
+          choco install openssl -y
+          $opensslPath = "C:\Program Files\OpenSSL-Win64"
+          echo "OPENSSL_WIN64_PATH=$opensslPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Setup JDK
         uses: actions/setup-java@v3
@@ -136,7 +144,7 @@ jobs:
       # 修改 Android build 步骤
       - name: Android build
         run: |
-          # 设置 OpenSSL 环境变量 (Windows 路径)
+          # 尝试使用 vcpkg 安装的静态库
           $env:OPENSSL_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static"
           $env:OPENSSL_LIB_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static\lib"
           $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_ROOT\installed\x64-windows-static\include"
@@ -144,26 +152,45 @@ jobs:
           # 为交叉编译设置环境变量
           $env:OPENSSL_STATIC = "true"
           
-          # 添加额外的链接标志
-          $env:RUSTFLAGS = "-C link-arg=-fuse-ld=lld"
-          
-          # 显示环境变量
+          # 显示环境变量和目录内容
           echo "VCPKG_ROOT: $env:VCPKG_ROOT"
           echo "OPENSSL_DIR: $env:OPENSSL_DIR"
           echo "OPENSSL_LIB_DIR: $env:OPENSSL_LIB_DIR"
           echo "OPENSSL_INCLUDE_DIR: $env:OPENSSL_INCLUDE_DIR"
-          echo "OPENSSL_STATIC: $env:OPENSSL_STATIC"
           
-          # 检查 OpenSSL 库文件是否存在
-          if (Test-Path "$env:OPENSSL_LIB_DIR\libssl.lib") {
-            echo "libssl.lib 文件存在"
-          } else {
-            echo "警告: libssl.lib 文件不存在!"
-            Get-ChildItem "$env:OPENSSL_LIB_DIR" -Recurse | Select-Object FullName
+          # 检查库文件
+          echo "检查 OpenSSL 库文件..."
+          Get-ChildItem "$env:OPENSSL_LIB_DIR" | ForEach-Object { echo $_.Name }
+          
+          # 设置额外的 Rust 环境变量
+          $env:RUSTFLAGS = "-L $env:OPENSSL_LIB_DIR"
+          
+          # 尝试构建
+          try {
+            yarn run tauri android build
+          } catch {
+            echo "使用 vcpkg 的 OpenSSL 构建失败，尝试使用 Chocolatey 安装的 OpenSSL..."
+            
+            # 使用 Chocolatey 安装的 OpenSSL
+            $env:OPENSSL_DIR = "$env:OPENSSL_WIN64_PATH"
+            $env:OPENSSL_LIB_DIR = "$env:OPENSSL_WIN64_PATH\lib"
+            $env:OPENSSL_INCLUDE_DIR = "$env:OPENSSL_WIN64_PATH\include"
+            $env:OPENSSL_STATIC = "false"  # 切换到动态链接
+            
+            echo "新的 OPENSSL_DIR: $env:OPENSSL_DIR"
+            echo "新的 OPENSSL_LIB_DIR: $env:OPENSSL_LIB_DIR"
+            echo "新的 OPENSSL_INCLUDE_DIR: $env:OPENSSL_INCLUDE_DIR"
+            
+            # 检查库文件
+            echo "检查新的 OpenSSL 库文件..."
+            Get-ChildItem "$env:OPENSSL_LIB_DIR" | ForEach-Object { echo $_.Name }
+            
+            # 重新设置 RUSTFLAGS
+            $env:RUSTFLAGS = "-L $env:OPENSSL_LIB_DIR"
+            
+            # 再次尝试构建
+            yarn run tauri android build
           }
-          
-          # 构建 Android 应用
-          yarn run tauri android build
 
       # 添加发布到GitHub Release的步骤
       - name: Create Release
