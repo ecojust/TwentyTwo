@@ -17,7 +17,7 @@ jobs:
       matrix:
         include:
           - platform: "ubuntu-22.04"
-            args: "--target armv7-linux-androideabi" # 添加多架构支持
+            args: "--target armv7" # 使用正确的目标架构名称
 
     runs-on: ${{ matrix.platform }}
 
@@ -139,8 +139,8 @@ jobs:
 
       - name: Android build
         run: |
-          # 构建 Android 应用，明确指定只构建 armv7 架构
-          yarn run tauri android build --target armv7-linux-androideabi --apk
+          # 构建 Android 应用，使用正确的目标架构名称
+          yarn run tauri android build --target armv7 --apk
 
       # 添加发布到GitHub Release的步骤
       - name: Create Release
