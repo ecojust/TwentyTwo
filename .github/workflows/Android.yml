@@ -98,11 +98,6 @@ jobs:
 
       - name: Android build
         run: |
-          # 添加调试信息
-          echo "检查自定义 OpenSSL 目录结构:"
-          ls -la $OPENSSL_DIR/lib
-          ls -la $OPENSSL_DIR/include/openssl | grep opensslconf.h
-
           # 构建 Android 应用
           yarn run tauri android build --apk
 
