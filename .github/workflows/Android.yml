@@ -1,7 +1,7 @@
 name: Andriod
 on:
   push:
-    branches: [master]
+    branches: [master-x]
   workflow_dispatch:
 
 jobs:
