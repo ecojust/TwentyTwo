@@ -111,6 +111,17 @@ jobs:
           # 创建符号链接确保头文件可以被找到
           sudo ln -sf /usr/include/x86_64-linux-gnu/openssl/opensslconf.h /usr/include/openssl/
           sudo ln -sf /usr/include/x86_64-linux-gnu/openssl/configuration.h /usr/include/openssl/ || true
+          
+          # 创建 .cargo/config.toml 文件来配置 Rust 交叉编译
+          mkdir -p ~/.cargo
+          cat > ~/.cargo/config.toml << 'EOF'
+          [target.aarch64-linux-android]
+          linker = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          rustflags = ["-C", "link-arg=-Wl,--no-fix-cortex-a53-843419"]
+
+          [target.armv7-linux-androideabi]
+          linker = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang"
+          EOF
 
       # 修改版本号生成逻辑
       - name: Get date and run number
