@@ -98,27 +98,13 @@ jobs:
 
       - name: Android build
         run: |
-          # 创建符合 openssl-sys 期望的目录结构
-          mkdir -p /tmp/openssl/lib
-          mkdir -p /tmp/openssl/include/openssl
-          
-          # 复制库文件和头文件到预期位置
-          sudo cp /usr/lib/x86_64-linux-gnu/libssl.* /tmp/openssl/lib/
-          sudo cp /usr/lib/x86_64-linux-gnu/libcrypto.* /tmp/openssl/lib/
-          sudo cp /usr/include/openssl/*.h /tmp/openssl/include/openssl/
-          
-          # 设置 OpenSSL 环境变量指向新创建的目录
-          export OPENSSL_DIR=/tmp/openssl
-          export OPENSSL_LIB_DIR=/tmp/openssl/lib
-          export OPENSSL_INCLUDE_DIR=/tmp/openssl/include
-          
           # 添加调试信息
           echo "检查自定义 OpenSSL 目录结构:"
           ls -la $OPENSSL_DIR/lib
           ls -la $OPENSSL_DIR/include/openssl | grep opensslconf.h
-          
+
           # 构建 Android 应用
-          RUST_BACKTRACE=1 yarn run tauri android build
+          yarn run tauri android build --apk
 
       # 添加发布到GitHub Release的步骤
       - name: Create Release
