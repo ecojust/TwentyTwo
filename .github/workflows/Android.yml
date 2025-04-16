@@ -74,7 +74,7 @@ jobs:
           [target.aarch64-linux-android]
           linker = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
           ar = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-          rustflags = ["-C", "link-arg=-Wl,--fix-cortex-a53-843419=off"]
+          # 移除有问题的链接参数
           EOF
 
       # Rust cache
@@ -137,8 +137,8 @@ jobs:
 
       - name: Android build
         run: |
-          # 只构建 aarch64 架构，这通常更容易成功
-          RUST_BACKTRACE=1 yarn run tauri android build --target aarch64 --apk
+          # 只构建 aarch64 架构，添加详细输出以便调试
+          RUST_BACKTRACE=full CARGO_TERM_VERBOSE=true yarn run tauri android build --target aarch64 --apk
 
       # 修改版本号生成逻辑
       - name: Get date and run number
