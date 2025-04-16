@@ -137,8 +137,7 @@ jobs:
 
       - name: Android build
         run: |
-          # Build Android app for two architectures individually
-          RUST_BACKTRACE=1 yarn run tauri android build --target armv7 --apk
+          # 只构建 aarch64 架构，这通常更容易成功
           RUST_BACKTRACE=1 yarn run tauri android build --target aarch64 --apk
 
       # 修改版本号生成逻辑
