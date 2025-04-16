@@ -32,57 +32,7 @@ jobs:
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: armv7-linux-androideabi
-
-      # Rust cache
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-
-      # Sync node version and setup cache
-      - name: Sync node version and setup cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-
-        # Install yarn globally
-      - name: Install pnpm
-        run: npm install -g yarn
-
-      # Install frontend dependencies
-      - name: Install frontend dependencies
-        run: yarn install
-
-      - name: install dependencies (ubuntu only)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
-          # 确保安装完整的 OpenSSL 开发包
-          sudo apt-get install pkg-config libssl-dev
-
-      - name: Install Android dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lib32z1 patchelf
-
-      - name: Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: "17"
-          distribution: "temurin"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
-
-      # 修改 NDK 安装方式
-      - name: Install Android NDK
-        run: |
-          # 使用 cmdline-tools 安装 NDK
-          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" --sdk_root=${ANDROID_HOME}
-          # 设置 NDK_HOME 环境变量
-          echo "NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/25.1.8937393" >> $GITHUB_ENV
+          targets: armv7-linux-androideabi,aarch64-linux-android
 
       # 添加 OpenSSL 交叉编译配置
       - name: Setup OpenSSL for cross-compilation
@@ -120,7 +70,32 @@ jobs:
           [target.armv7-linux-androideabi]
           linker = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang"
           ar = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+
+          [target.aarch64-linux-android]
+          linker = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          ar = "/usr/local/lib/android/sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+          rustflags = ["-C", "link-arg=-Wl,--fix-cortex-a53-843419=off"]
           EOF
+
+      # Rust cache
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      # Sync node version and setup cache
+      - name: Sync node version and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+        # Install yarn globally
+      - name: Install pnpm
+        run: npm install -g yarn
+
+      # Install frontend dependencies
+      - name: Install frontend dependencies
+        run: yarn install
 
       # 修改版本号生成逻辑
       - name: Get date and run number
@@ -138,8 +113,8 @@ jobs:
 
       - name: Android build
         run: |
-          # 构建 Android 应用
-          RUST_BACKTRACE=1 yarn run tauri android build --apk
+          # 构建 Android 应用，同时构建两个架构
+          RUST_BACKTRACE=1 yarn run tauri android build --target armv7,aarch64 --apk
 
       # 添加发布到GitHub Release的步骤
       - name: Create Release
