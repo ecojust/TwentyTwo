@@ -8,7 +8,19 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from "vue";
+import { invoke } from "@tauri-apps/api/core";
 import FreshNavbar from "./components/FreshNavbar.vue";
+// import PuppeteerTool from "./tool/puppeteer";
+const urls = ref([]);
+onMounted(async () => {
+  console.log("mounted");
+  // await PuppeteerTool.getContent("https://www.baidu.com");
+  const res = await invoke("fetch_request", {
+    url: "https://www.baidu.com",
+  });
+  console.log(res);
+});
 </script>
 
 <style lang="less">

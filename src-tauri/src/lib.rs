@@ -1,12 +1,116 @@
-use headless_chrome::{Browser, LaunchOptionsBuilder};
+use headless_chrome::{browser::tab::RequestInterceptor,Browser, LaunchOptionsBuilder};
 use serde::Serialize;
 use rand::seq::SliceRandom; // 添加随机选择功能
+use std::{error::Error, sync::Arc};
 
+use headless_chrome::{
+    browser::{
+        tab::RequestPausedDecision,
+        transport::{SessionId, Transport},
+    },
+    protocol::cdp::{
+        Fetch::{events::RequestPausedEvent, FailRequest},
+        Network::{self, ResourceType},
+    },
+};
+use std::sync::Mutex;
+use std::any::Any;
 #[derive(Serialize)]
 struct Ret {
     success: bool,
     message: Option<String>,
     data: Option<String>, // 网页内容或错误信息
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct Params {
+    pub token: Option<String>,
+    pub user_agent: Option<String>,
+}
+
+
+fn browse(
+    url: &str,
+    interceptor: Option<Arc<dyn RequestInterceptor + Send + Sync>>,
+) -> Result<Params, Box<dyn std::error::Error>> {
+    println!("browse : {}", url);
+    let launch_options = LaunchOptionsBuilder::default()
+        .headless(true) // Ensure it runs headless
+        .build()
+        .unwrap();
+    let browser = Browser::new(launch_options)?;
+    let tab = browser.new_tab()?;
+    if let Some(interceptor) = interceptor {
+        tab.enable_request_interception(interceptor.clone())?;
+        tab.enable_fetch(None, None)?;
+    }
+
+    tab.navigate_to(url)?;
+    tab.wait_until_navigated()?;
+    
+    // 等待一段时间，确保所有XHR请求都被捕获
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    
+    // 这里不再需要硬编码的错误信息
+    let params = Params {
+        token: Some("请通过拦截器获取XHR请求列表".to_string()),
+        user_agent: Some(get_random_user_agent().to_string()),
+    };
+
+    Ok(params)
+}
+
+pub fn get_params_with_interceptor(
+    url: &str,
+    interceptor: Arc<dyn RequestInterceptor + Send + Sync>,
+) -> Result<Params, Box<dyn Error>> {
+    browse(url,  Some(interceptor))
+}
+
+
+struct MinimalInterceptor {
+    xhr_urls: Arc<Mutex<Vec<String>>>,
+}
+
+impl MinimalInterceptor {
+    fn new() -> Self {
+        MinimalInterceptor {
+            xhr_urls: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+    
+    fn get_xhr_urls(&self) -> Vec<String> {
+        let urls = self.xhr_urls.lock().unwrap();
+        urls.clone()
+    }
+}
+
+impl RequestInterceptor for MinimalInterceptor {
+    fn intercept(
+        &self,
+        _transport: Arc<Transport>,
+        _session_id: SessionId,
+        event: RequestPausedEvent,
+    ) -> RequestPausedDecision {
+         // 获取请求URL
+         let url = &event.params.request.url;
+
+        match event.params.resource_Type {
+            ResourceType::Document | ResourceType::Script | ResourceType::Xhr => {
+                // 如果是XHR请求，保存请求地址
+                //if event.params.resource_Type == ResourceType::Xhr {
+                    println!("XHR请求: {}", url);
+                    let mut urls = self.xhr_urls.lock().unwrap();
+                    urls.push(url.clone());
+                //}
+                RequestPausedDecision::Continue(None)
+            }
+            _ => RequestPausedDecision::Fail(FailRequest {
+                error_reason: Network::ErrorReason::BlockedByClient,
+                request_id: event.params.request_id,
+            }),
+        }
+    }
 }
 
 // 生成随机 User-Agent 的函数
@@ -174,12 +278,59 @@ async fn http_get(url: String, headers: Option<serde_json::Value>) -> Result<Ret
     }
 }
 
+#[tauri::command]
+fn fetch_request(url: String) -> Result<Ret, String> {
+    let interceptor = Arc::new(MinimalInterceptor::new());
+
+    let result = get_params_with_interceptor(&url, interceptor.clone());
+    match result {
+        Ok(params) => {
+            // 获取XHR请求URL列表
+            let xhr_urls = interceptor.get_xhr_urls();
+            let xhr_urls_str = if xhr_urls.is_empty() {
+                "未检测到XHR请求".to_string()
+            } else {
+                xhr_urls.join("|")
+            };
+            
+            println!("XHR请求列表:");
+            println!("{}", xhr_urls_str);
+            
+            Ok(Ret {
+                success: true,
+                message: Some(format!("成功获取XHR请求列表，共{}个", xhr_urls.len())),
+                data: Some(xhr_urls_str),
+            })
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+            Ok(Ret {
+                success: false,
+                message: Some(format!("获取XHR请求失败: {}", e)),
+                data: None,
+            })
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![fetch_url, http_get])
+        .invoke_handler(tauri::generate_handler![fetch_url, http_get,fetch_request])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+
+// 在适当的位置添加这个trait扩展
+pub trait RequestInterceptorExt {
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl<T: RequestInterceptor + Any + Send + Sync> RequestInterceptorExt for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
