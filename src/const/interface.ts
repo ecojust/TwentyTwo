@@ -16,6 +16,7 @@ export interface IPlugin {
   play: {
     mediaType: string;
     description: string;
+    parseType: string;
     parse: (html: string) => string;
   };
 }

@@ -147,8 +147,8 @@ export default class Monaco {
     }
   }
 
-  static async _fetchIPC(url: string) {
-    return await invoke("fetch_url", {
+  static async _fetchIPC(url: string, type: string = "html") {
+    return await invoke(type == "html" ? "fetch_url" : "fetch_request", {
       url: url,
     });
   }
@@ -191,7 +191,10 @@ export default class Monaco {
     const value = this.getValue().trim();
     const func = eval(value) as IPlugin;
     const play = func.play;
-    const res = (await this._fetchIPC(play_url as string)) as IResult;
+    const res = (await this._fetchIPC(
+      play_url as string,
+      play.parseType
+    )) as IResult;
     if (!res.success) {
       return res;
     }

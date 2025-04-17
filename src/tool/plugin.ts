@@ -62,8 +62,8 @@ export default class Plugin {
     window.cheerio = cheerio;
   }
 
-  static async _fetchIPC(url: string) {
-    return await invoke("fetch_url", {
+  static async _fetchIPC(url: string, type: string = "html") {
+    return await invoke(type == "html" ? "fetch_url" : "fetch_request", {
       url: url,
     });
   }
@@ -111,7 +111,10 @@ export default class Plugin {
 
     message += ";解析播放页...";
     updateMessage(message);
-    res = (await this._fetchIPC(play_url as string)) as IResult;
+    res = (await this._fetchIPC(
+      play_url as string,
+      this._currentPlugin.play.parseType || "html"
+    )) as IResult;
     if (!res.success) {
       return res;
     }
