@@ -1,10 +1,12 @@
-use headless_chrome::{browser::tab::RequestInterceptor,Browser, LaunchOptionsBuilder};
-use serde::Serialize;
-use rand::seq::SliceRandom; // 添加随机选择功能
-use std::{error::Error, sync::Arc};
+// 标准库导入
+use std::any::Any;
+use std::error::Error;
+use std::sync::{Arc, Mutex};
 
+// 第三方库导入
 use headless_chrome::{
     browser::{
+        tab::RequestInterceptor,
         tab::RequestPausedDecision,
         transport::{SessionId, Transport},
     },
@@ -12,9 +14,12 @@ use headless_chrome::{
         Fetch::{events::RequestPausedEvent, FailRequest},
         Network::{self, ResourceType},
     },
+    Browser, LaunchOptionsBuilder,
 };
-use std::sync::Mutex;
-use std::any::Any;
+use rand::seq::SliceRandom;
+use serde::Serialize;
+
+// 数据结构定义
 #[derive(Serialize)]
 pub struct Ret {
     success: bool,
@@ -22,54 +27,18 @@ pub struct Ret {
     data: Option<String>, // 网页内容或错误信息
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct Params {
-    pub token: Option<String>,
-    pub user_agent: Option<String>,
+// RequestInterceptor 扩展 trait
+pub trait RequestInterceptorExt {
+    fn as_any(&self) -> &dyn Any;
 }
 
-
-fn browse(
-    url: &str,
-    interceptor: Option<Arc<dyn RequestInterceptor + Send + Sync>>,
-) -> Result<Ret, Box<dyn std::error::Error>> {
-    println!("browse : {}", url);
-    let launch_options = LaunchOptionsBuilder::default()
-        .headless(true) // Ensure it runs headless
-        .build()
-        .unwrap();
-    let browser = Browser::new(launch_options)?;
-    let tab = browser.new_tab()?;
-    if let Some(interceptor) = interceptor {
-        tab.enable_request_interception(interceptor.clone())?;
-        tab.enable_fetch(None, None)?;
+impl<T: RequestInterceptor + Any + Send + Sync> RequestInterceptorExt for T {
+    fn as_any(&self) -> &dyn Any {
+        self
     }
-
-    tab.navigate_to(url)?;
-    tab.wait_until_navigated()?;
-    
-    // 等待一段时间，确保所有XHR请求都被捕获
-    std::thread::sleep(std::time::Duration::from_secs(2));
-    
-    // 这里不再需要硬编码的错误信息
-    let params = Ret {
-        success: true,
-        message: Some("成功获取网页内容".to_string()),
-        data: Some(tab.get_content()?),
-   
-    };
-
-    Ok(params)
 }
 
-pub fn get_params_with_interceptor(
-    url: &str,
-    interceptor: Arc<dyn RequestInterceptor + Send + Sync>,
-) -> Result<Ret, Box<dyn Error>> {
-    browse(url,  Some(interceptor))
-}
-
-
+// 浏览器请求拦截器
 struct MinimalInterceptor {
     xhr_urls: Arc<Mutex<Vec<String>>>,
 }
@@ -94,17 +63,14 @@ impl RequestInterceptor for MinimalInterceptor {
         _session_id: SessionId,
         event: RequestPausedEvent,
     ) -> RequestPausedDecision {
-         // 获取请求URL
-         let url = &event.params.request.url;
+        // 获取请求URL
+        let url = &event.params.request.url;
 
         match event.params.resource_Type {
             ResourceType::Document | ResourceType::Script | ResourceType::Xhr => {
-                // 如果是XHR请求，保存请求地址
-                //if event.params.resource_Type == ResourceType::Xhr {
-                    println!("XHR请求: {}", url);
-                    let mut urls = self.xhr_urls.lock().unwrap();
-                    urls.push(url.clone());
-                //}
+                println!("XHR请求: {}", url);
+                let mut urls = self.xhr_urls.lock().unwrap();
+                urls.push(url.clone());
                 RequestPausedDecision::Continue(None)
             }
             _ => RequestPausedDecision::Fail(FailRequest {
@@ -115,7 +81,7 @@ impl RequestInterceptor for MinimalInterceptor {
     }
 }
 
-// 生成随机 User-Agent 的函数
+// 工具函数
 fn get_random_user_agent() -> &'static str {
     let user_agents = [
         // Chrome (Windows)
@@ -164,16 +130,54 @@ fn get_random_user_agent() -> &'static str {
     user_agents.choose(&mut rand::thread_rng()).unwrap_or(&user_agents[0])
 }
 
+fn browse(
+    url: &str,
+    interceptor: Option<Arc<dyn RequestInterceptor + Send + Sync>>,
+) -> Result<Ret, Box<dyn std::error::Error>> {
+    println!("browse : {}", url);
+    let launch_options = LaunchOptionsBuilder::default()
+        .headless(true) // Ensure it runs headless
+        .build()
+        .unwrap();
+    let browser = Browser::new(launch_options)?;
+    let tab = browser.new_tab()?;
+    
+    if let Some(interceptor) = interceptor {
+        tab.enable_request_interception(interceptor.clone())?;
+        tab.enable_fetch(None, None)?;
+    }
+
+    tab.navigate_to(url)?;
+    tab.wait_until_navigated()?;
+    
+    // 等待一段时间，确保所有XHR请求都被捕获
+    // std::thread::sleep(std::time::Duration::from_secs(2));
+    
+    let params = Ret {
+        success: true,
+        message: Some("成功获取网页内容".to_string()),
+        data: Some(tab.get_content()?),
+    };
+
+    Ok(params)
+}
+
+pub fn get_params_with_interceptor(
+    url: &str,
+    interceptor: Arc<dyn RequestInterceptor + Send + Sync>,
+) -> Result<Ret, Box<dyn Error>> {
+    browse(url, Some(interceptor))
+}
+
 #[tauri::command]
 async fn fetch_url(url: String) -> Result<Ret, String> {
     println!("fetch website : {}", url);
 
     let launch_options = LaunchOptionsBuilder::default()
-        .headless(true) // Ensure it runs headless
+        .headless(true)
         .build()
         .unwrap();
 
-    // 使用 match 处理错误
     match Browser::new(launch_options) {
         Ok(browser) => {
             match browser.new_tab() {
@@ -315,24 +319,13 @@ fn fetch_request(url: String) -> Result<Ret, String> {
     }
 }
 
+// Tauri 应用入口点
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![fetch_url, http_get,fetch_request])
+        .invoke_handler(tauri::generate_handler![fetch_url, http_get, fetch_request])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-
-// 在适当的位置添加这个trait扩展
-pub trait RequestInterceptorExt {
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl<T: RequestInterceptor + Any + Send + Sync> RequestInterceptorExt for T {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }
