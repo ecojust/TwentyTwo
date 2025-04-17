@@ -16,7 +16,7 @@ use headless_chrome::{
 use std::sync::Mutex;
 use std::any::Any;
 #[derive(Serialize)]
-struct Ret {
+pub struct Ret {
     success: bool,
     message: Option<String>,
     data: Option<String>, // 网页内容或错误信息
@@ -32,7 +32,7 @@ pub struct Params {
 fn browse(
     url: &str,
     interceptor: Option<Arc<dyn RequestInterceptor + Send + Sync>>,
-) -> Result<Params, Box<dyn std::error::Error>> {
+) -> Result<Ret, Box<dyn std::error::Error>> {
     println!("browse : {}", url);
     let launch_options = LaunchOptionsBuilder::default()
         .headless(true) // Ensure it runs headless
@@ -52,9 +52,11 @@ fn browse(
     std::thread::sleep(std::time::Duration::from_secs(2));
     
     // 这里不再需要硬编码的错误信息
-    let params = Params {
-        token: Some("请通过拦截器获取XHR请求列表".to_string()),
-        user_agent: Some(get_random_user_agent().to_string()),
+    let params = Ret {
+        success: true,
+        message: Some("成功获取网页内容".to_string()),
+        data: Some(tab.get_content()?),
+   
     };
 
     Ok(params)
@@ -63,7 +65,7 @@ fn browse(
 pub fn get_params_with_interceptor(
     url: &str,
     interceptor: Arc<dyn RequestInterceptor + Send + Sync>,
-) -> Result<Params, Box<dyn Error>> {
+) -> Result<Ret, Box<dyn Error>> {
     browse(url,  Some(interceptor))
 }
 
@@ -297,7 +299,7 @@ fn fetch_request(url: String) -> Result<Ret, String> {
             println!("{}", xhr_urls_str);
             
             Ok(Ret {
-                success: true,
+                success: params.success,
                 message: Some(format!("成功获取XHR请求列表，共{}个", xhr_urls.len())),
                 data: Some(xhr_urls_str),
             })
