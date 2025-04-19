@@ -195,6 +195,8 @@ export default class Monaco {
       play_url as string,
       play.parseType
     )) as IResult;
+    console.log(res, play);
+    //@ts-ignore
     if (!res.success) {
       return res;
     }

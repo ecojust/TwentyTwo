@@ -8,7 +8,7 @@
     <div class="player-header" :class="{ 'controls-hidden': controlsHidden }">
       <div class="tv-style-title">{{ videoTitle }}</div>
 
-      <span>{{ videoSource }}</span>
+      <span>{{ videoSource }}{{ videoType }}</span>
       <el-button
         class="player-header-close"
         type="primary"
@@ -18,7 +18,14 @@
         <el-icon><Close /></el-icon>
       </el-button>
     </div>
+
+    <iframe
+      v-if="computedVideoType == 'iframe'"
+      :src="videoSource"
+      frameborder="0"
+    ></iframe>
     <video
+      v-else
       ref="videoRef"
       controls
       autoplay
@@ -71,7 +78,7 @@ const computedVideoType = computed(() => {
     ts: "video/mp2t",
     mkv: "video/x-matroska",
   };
-  return mimeTypes[extension] || "video/mp4"; // 默认返回mp4类型
+  return mimeTypes[extension] || "iframe";
 });
 
 const videoRef = ref(null);
@@ -80,6 +87,7 @@ let hideControlsTimer = null;
 
 // 处理鼠标移动事件
 const handleMouseMove = () => {
+  if (computedVideoType.value == "iframe") return;
   // 显示控制栏
   controlsHidden.value = false;
 
@@ -96,6 +104,8 @@ const handleMouseMove = () => {
 
 // 立即隐藏控制栏
 const hideControls = () => {
+  if (computedVideoType.value == "iframe") return;
+
   controlsHidden.value = true;
   if (hideControlsTimer) {
     clearTimeout(hideControlsTimer);
@@ -114,6 +124,7 @@ const handleClose = () => {
 
 // Clean up when component is unmounted
 onMounted(() => {
+  if (!videoRef.value) return;
   videoRef.value.load();
   videoRef.value.play().catch((err) => {
     console.error("自动播放失败:", err);
@@ -198,6 +209,15 @@ onUnmounted(() => {
   .video-element {
     width: 100%;
     height: 100%;
+  }
+
+  iframe {
+    position: absolute;
+
+    width: 100%;
+    height: 100%;
+    border: none;
+    z-index: 0;
   }
 }
 </style>

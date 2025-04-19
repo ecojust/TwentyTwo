@@ -1,5 +1,5 @@
 import File from "./file";
-import { IHistory, IVideo } from "../const/interface";
+import { IVideo } from "../const/interface";
 import { HISTORY_FILE_NAME } from "../const/const";
 
 export default class History {
