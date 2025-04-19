@@ -19,8 +19,6 @@ export const usePluginsStore = defineStore("plugins", () => {
   // 从本地存储加载插件
   const loadPlugins = async () => {
     const savedPlugins = await Plugin.getPlugins();
-
-    console.log("savedPlugins", savedPlugins);
     if (savedPlugins) {
       try {
         plugins.value = savedPlugins;
@@ -39,8 +37,11 @@ export const usePluginsStore = defineStore("plugins", () => {
       if (!response.success) {
         throw new Error(`请求失败: ${response.data}`);
       }
-      const pluginName = Generater.generatePluginName(url);
-      await Plugin.pushPlugin(pluginName, response.data);
+      const pluginName = Generater.generateName(url);
+      await Plugin.pushPlugin(
+        `${pluginName}.js`,
+        Object.assign(response.data, { id: pluginName })
+      );
       await loadPlugins();
       ElMessage.success(`导入插件成功:${pluginName}`);
     } catch (error) {
@@ -51,8 +52,8 @@ export const usePluginsStore = defineStore("plugins", () => {
   };
 
   // 移除插件
-  const removePlugin = async (name: string) => {
-    await Plugin.deletePlugin(name);
+  const removePlugin = async (id: string) => {
+    await Plugin.deletePlugin(id);
     await loadPlugins();
   };
 

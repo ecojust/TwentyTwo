@@ -21,6 +21,15 @@ export default class Plugin {
     await File._writeFile(DRAFT_PLUGIN_FILE, content);
   }
 
+  static async clearPlugins() {
+    const entries = await File._readDir(PLUGIN_FOLDER_NAME);
+    for (const entry of entries) {
+      if (entry.isFile) {
+        return File._deleteFile(`${PLUGIN_FOLDER_NAME}/${entry.name}`);
+      }
+    }
+  }
+
   static async getPlugins() {
     const entries = await File._readDir(PLUGIN_FOLDER_NAME);
     const plugins: Array<IPlugin> = [];
@@ -32,7 +41,9 @@ export default class Plugin {
 
         if (file?.success) {
           const plugin = eval(file.data) as IPlugin;
-          plugins.push(Object.assign(plugin, { file_name: entry.name }));
+          plugins.push(
+            Object.assign(plugin, { id: entry.name.replace(".js", "") })
+          );
         }
       }
     }
@@ -43,15 +54,15 @@ export default class Plugin {
     await File._writeFile(`${PLUGIN_FOLDER_NAME}/${name}`, data);
   }
 
-  static async deletePlugin(name: string): Promise<IResult> {
-    return File._deleteFile(`${PLUGIN_FOLDER_NAME}/${name}`);
+  static async deletePlugin(id: string): Promise<IResult> {
+    return File._deleteFile(`${PLUGIN_FOLDER_NAME}/${id}.js`);
   }
 
   static async setPlugin() {
     const config = await Config.getConfiguration();
     const plugins = await this.getPlugins();
     const activePlugin = plugins.find(
-      (plugin) => plugin.file_name === config.active_plugin
+      (plugin) => plugin.id === config.active_plugin
     );
     if (!activePlugin) {
       return;

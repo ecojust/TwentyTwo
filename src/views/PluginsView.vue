@@ -24,7 +24,7 @@
         ></el-empty>
 
         <el-row v-else :gutter="20">
-          <el-scrollbar wrap-style="height:calc(100vh - 300px);width:100%;">
+          <el-scrollbar wrap-style="height:calc(100vh - 310px);width:100%;">
             <div
               class="plugin-item"
               v-for="plugin in plugins"
@@ -41,7 +41,7 @@
                 <div class="plugin-header">
                   <h4>{{ plugin.name }}</h4>
                   <el-tag
-                    v-show="plugin.file_name === config.active_plugin"
+                    v-show="plugin.id === config.active_plugin"
                     type="success"
                     size="small"
                     effect="light"
@@ -57,7 +57,15 @@
                 </div>
 
                 <div class="plugin-actions">
-                  <span class="file-name">{{ plugin.file_name }}</span>
+                  <span class="file-name">{{ plugin.id }}</span>
+                  <el-button
+                    @click.stop="deletePlugin(plugin)"
+                    type="warning"
+                    size="small"
+                    plain
+                  >
+                    删除插件
+                  </el-button>
                 </div>
               </el-card>
             </div>
@@ -279,12 +287,24 @@ async function importPlugin() {
 
 const setPlugin = async (plugin) => {
   try {
-    config.value.active_plugin = plugin.file_name;
+    config.value.active_plugin = plugin.id;
     await Config.setConfiguration(config.value);
     ElMessage.success(`已启用插件: ${plugin.name}`);
   } catch (error) {
     ElMessage.error(`设置插件失败: ${error.message}`);
     console.error("设置插件失败:", error);
+  }
+};
+
+const deletePlugin = async (plugin) => {
+  try {
+    console.log("plugin", plugin);
+    await Plugin.deletePlugin(plugin.id);
+    await pluginsStore.loadPlugins();
+    ElMessage.success(`已删除插件: ${plugin.name}`);
+  } catch (error) {
+    ElMessage.error(`删除插件失败: ${error.message}`);
+    console.error("删除插件失败:", error);
   }
 };
 
@@ -297,6 +317,9 @@ onMounted(async () => {
   } catch (error) {
     console.error("初始化失败:", error);
   }
+
+  console.log("plugins", plugins.value);
+  console.log("config", config.value);
 });
 
 onBeforeUnmount(() => {

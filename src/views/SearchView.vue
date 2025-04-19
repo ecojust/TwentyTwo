@@ -37,7 +37,7 @@
       ></el-empty>
 
       <el-row v-else-if="searchResults.length > 0" :gutter="20">
-        <el-scrollbar wrap-style="height:calc(100vh - 330px);width:100%;">
+        <el-scrollbar wrap-style="height:calc(100vh - 340px);width:100%;">
           <div
             class="video-item"
             v-for="(result, index) in searchResults"
@@ -58,11 +58,16 @@
                   :alt="result.title"
                   fit="cover"
                 ></el-image>
+                <!-- 添加居中的播放图标 -->
+                <div class="play-icon-overlay" @click="playVideo(result)">
+                  <el-icon class="play-icon"><VideoPlay /></el-icon>
+                </div>
               </div>
               <div class="video-info">
                 <h3>{{ result.title }}</h3>
                 <el-tag size="small" effect="light">{{ result.score }}</el-tag>
                 <span>{{ result.text }}</span>
+                <!-- 移除原来的播放按钮
                 <div class="video-actions">
                   <el-button
                     @click="playVideo(result)"
@@ -72,15 +77,8 @@
                   >
                     播放
                   </el-button>
-                  <el-button
-                    @click="addToFavorites(result)"
-                    type="warning"
-                    size="small"
-                    plain
-                  >
-                    收藏
-                  </el-button>
                 </div>
+                -->
               </div>
             </el-card>
           </div>
@@ -104,6 +102,7 @@
       :show-close="false"
     >
       <VideoPlayer
+        v-if="showPlayer"
         :video-source="playerSource"
         :video-title="playerTitle"
         :video-type="playerType"
@@ -119,7 +118,7 @@ import { ref, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
-import { Close } from "@element-plus/icons-vue";
+import { Close, VideoPlay } from "@element-plus/icons-vue";
 import VideoPlayer from "../components/VideoPlayer.vue";
 
 // 导入工具类
@@ -183,13 +182,16 @@ async function playVideo(video) {
     const res = await Plugin.getPlayUrl(video.href, (msg) => {
       status.value = msg;
     });
+    console.log("获取播放链接", res);
 
     if (res.success) {
       video.play_url = res.data;
       video.type = res.type;
+      if (!res.data) {
+        status.value = `获取播放链接失败：值为空`;
+        return;
+      }
     } else {
-      status.value = `获取播放链接失败：${res.message}`;
-      return;
     }
   }
 
@@ -242,9 +244,9 @@ onMounted(async () => {
 
   // 视频列表样式
   .video-item {
-    width: 270px;
+    width: 260px;
     display: inline-block;
-    margin: 5px;
+    margin: 10px;
 
     .video-card {
       margin-bottom: 20px;
@@ -260,6 +262,32 @@ onMounted(async () => {
     .video-thumbnail {
       height: 180px;
       overflow: hidden;
+      position: relative;
+
+      .play-icon-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        transition: opacity 0.3s;
+        cursor: pointer;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        .play-icon {
+          font-size: 48px;
+          color: #fff;
+          filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
+        }
+      }
     }
 
     .video-info {

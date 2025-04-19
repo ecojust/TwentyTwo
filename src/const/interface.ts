@@ -1,5 +1,5 @@
 export interface IPlugin {
-  file_name: string;
+  id: string;
   name: string;
   description: string;
   version: string;
@@ -34,4 +34,23 @@ export interface IHistory {
   score: string;
   source: string;
   time: string;
+}
+
+export interface IVideo {
+  title: string;
+  type: string;
+  play_url: string;
+  thumbnail?: string;
+  time: string;
+  href?: string;
+  score?: string;
+  source?: string;
+}
+
+export interface ICollection {
+  // id: string;
+  title: string;
+  coverUrl: string;
+  time: string;
+  videos: Array<IVideo>;
 }

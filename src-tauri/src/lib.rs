@@ -151,7 +151,7 @@ fn browse(
     tab.wait_until_navigated()?;
     
     // 等待一段时间，确保所有XHR请求都被捕获
-    // std::thread::sleep(std::time::Duration::from_secs(2));
+    // std::thread::sleep(std::time::Duration::from_secs(5));
     
     let params = Ret {
         success: true,

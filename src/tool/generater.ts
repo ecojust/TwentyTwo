@@ -1,5 +1,5 @@
 export default class Generater {
-  static generatePluginName(url: string) {
+  static generateName(url: string) {
     const cleanUrl = url.replace(/^https?:\/\//, "").replace(/[^\w\d.-]/g, "_");
     let hash = 0;
     for (let i = 0; i < cleanUrl.length; i++) {
@@ -8,6 +8,6 @@ export default class Generater {
       hash = hash & hash;
     }
     const positiveHash = Math.abs(hash).toString(16);
-    return `plugin_${positiveHash}.js`;
+    return positiveHash;
   }
 }
