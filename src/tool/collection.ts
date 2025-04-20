@@ -1,8 +1,6 @@
 import File from "./file";
 import { IVideo, ICollection, IResult } from "../const/interface";
 import { COLLECTION_FOLDER_NAME } from "../const/const";
-import Generater from "./generater";
-import { el } from "element-plus/es/locale/index.mjs";
 
 export default class Collection {
   static async clearCollections() {

@@ -1,8 +1,6 @@
 import mergeImages from "merge-images";
 import html2canvas from "html2canvas";
 
-import { invoke } from "@tauri-apps/api/core";
-
 export default class Generater {
   static generateName(url: string) {
     const cleanUrl = url.replace(/^https?:\/\//, "").replace(/[^\w\d.-]/g, "_");
@@ -22,7 +20,7 @@ export default class Generater {
       // 将远程图片转换为本地base64
       const base64Images = await Promise.all(
         thumbnails.map(async (url) => {
-          return new Promise<string>(async (resolve, reject) => {
+          return new Promise<string>(async (resolve) => {
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.style.cssText = `
@@ -87,7 +85,7 @@ export default class Generater {
       // img.src = base64Images[0];
 
       // 使用本地base64图片创建合并图像
-      const images = base64Images.map((src, index) => {
+      const images = base64Images.map((src) => {
         // 随机位置，避免所有图片堆叠在一起
         const x = Math.floor(Math.random() * 300);
         const y = Math.floor(Math.random() * 300);

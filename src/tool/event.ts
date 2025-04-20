@@ -2,7 +2,7 @@ import { computed } from "vue";
 
 export default class Event {
   static longPress(longPressDuration: number = 3000, callback?: Function) {
-    let longPressTimer: number;
+    let longPressTimer: NodeJS.Timeout | null;
 
     const startLongPress = () => {
       cancelLongPress();
@@ -14,7 +14,7 @@ export default class Event {
     const cancelLongPress = () => {
       if (longPressTimer) {
         clearTimeout(longPressTimer);
-        longPressTimer = -1;
+        longPressTimer = null;
       }
     };
 
