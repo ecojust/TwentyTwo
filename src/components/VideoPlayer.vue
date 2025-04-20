@@ -8,7 +8,7 @@
     <div class="player-header" :class="{ 'controls-hidden': controlsHidden }">
       <div class="tv-style-title">{{ videoTitle }}</div>
 
-      <span>{{ videoSource }}{{ videoType }}</span>
+      <span>{{ videoSource }}</span>
       <el-button
         class="player-header-close"
         type="primary"
@@ -160,10 +160,14 @@ onUnmounted(() => {
     z-index: 90;
     padding: 15px 20px !important;
     transition: opacity 0.3s ease;
+    pointer-events: none;
 
     &.controls-hidden {
       opacity: 0;
       pointer-events: none;
+    }
+    .player-header-close {
+      pointer-events: all;
     }
 
     .tv-style-title {

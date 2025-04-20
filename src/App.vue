@@ -2,11 +2,12 @@
   <div class="app-container">
     <FreshNavbar />
     <div class="main-content">
-      <router-view v-slot="{ Component }">
+      <!-- <router-view v-slot="{ Component }">
         <keep-alive>
           <component :is="Component" />
         </keep-alive>
-      </router-view>
+      </router-view> -->
+      <router-view />
     </div>
   </div>
 </template>

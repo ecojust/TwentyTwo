@@ -114,7 +114,7 @@
 
 <script setup>
 // 导入依赖
-import { ref, onMounted, nextTick } from "vue";
+import { ref, onMounted, nextTick, onActivated } from "vue";
 import { useRouter } from "vue-router";
 import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
@@ -214,6 +214,16 @@ async function playVideo(video) {
 function addToFavorites(video) {
   favoritesStore.addFavorite(video);
 }
+
+// onActivated(async () => {
+//   await Plugin.setPlugin();
+//   if (!Plugin._currentPlugin) {
+//     status.value = "请先安装插件";
+//   } else {
+//     activePlugin.value = Plugin._currentPlugin.name;
+//     status.value = "输入关键字开始查询";
+//   }
+// });
 
 // 生命周期钩子
 onMounted(async () => {

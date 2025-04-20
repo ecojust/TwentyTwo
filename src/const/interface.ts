@@ -24,7 +24,7 @@ export interface IPlugin {
 export interface IResult {
   success: boolean;
   message: string;
-  data: string;
+  data?: string | null | any;
 }
 
 export interface IHistory {
@@ -48,8 +48,9 @@ export interface IVideo {
 }
 
 export interface ICollection {
-  // id: string;
+  id: string;
   title: string;
+  description: string;
   coverUrl: string;
   time: string;
   videos: Array<IVideo>;

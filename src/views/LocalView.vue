@@ -88,21 +88,26 @@
                   class="video-card"
                   :body-style="{ padding: '0px' }"
                   shadow="hover"
+                  @click="openCollection(coll)"
                 >
                   <div class="video-thumbnail">
                     <el-image
-                      :src="coll.thumbnail || '/placeholder.jpg'"
+                      :src="coll.coverUrl || '/placeholder.jpg'"
                       :alt="coll.title"
                       fit="cover"
                     ></el-image>
                     <!-- 添加居中的播放图标 -->
                   </div>
                   <div class="video-info">
-                    <h3>{{ coll.title }}</h3>
+                    <h3>{{ coll.title }} ({{ coll.videos.length }})</h3>
                     <el-text class="video-path" truncated>{{
                       coll.id
                     }}</el-text>
-                    <div class="video-actions"></div>
+                    <div class="video-actions">
+                      <!-- <el-button @click.stop="generateCover(coll)"
+                        >生成封面</el-button
+                      > -->
+                    </div>
                   </div>
                 </el-card>
               </div>
@@ -149,12 +154,20 @@
       :close-on-click-modal="false"
     >
       <el-form :model="collectionForm" label-width="80px">
-        <el-form-item label="合集名称" required>
+        <el-form-item label="名称" required>
           <el-input
-            v-model="collectionForm.name"
+            v-model="collectionForm.title"
             placeholder="请输入合集名称"
           ></el-input>
         </el-form-item>
+
+        <el-form-item label="描述">
+          <el-input
+            v-model="collectionForm.description"
+            placeholder="请输入合集描述"
+          ></el-input>
+        </el-form-item>
+
         <el-form-item label="封面图">
           <el-upload
             class="cover-uploader"
@@ -181,6 +194,117 @@
         </span>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="showSelectCollectionDialog"
+      title="选择合集"
+      width="30%"
+      :close-on-click-modal="false"
+      class="select-collection-dialog"
+    >
+      <el-scrollbar wrap-style="height:300px">
+        <el-radio-group v-model="selectedCollection">
+          <div class="collection-select-list">
+            <el-radio
+              v-for="(coll, index) in collection"
+              :key="index"
+              :label="coll.id"
+              class="collection-select-item"
+            >
+              <div class="collection-select-content">
+                <el-image
+                  class="collection-thumbnail"
+                  :src="coll.coverUrl || '/placeholder.jpg'"
+                  fit="cover"
+                ></el-image>
+                <span class="collection-title">{{ coll.title }}</span>
+              </div>
+            </el-radio>
+          </div>
+        </el-radio-group>
+      </el-scrollbar>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showSelectCollectionDialog = false"
+            >取消</el-button
+          >
+          <el-button type="primary" @click="confirmAddToCollection"
+            >确定</el-button
+          >
+        </span>
+      </template>
+    </el-dialog>
+    <!-- 添加查看合集内容的对话框 -->
+    <el-dialog
+      v-model="showCollectionVideosDialog"
+      :title="currentCollection ? currentCollection.title : '合集内容'"
+      width="70%"
+      class="collection-videos-dialog"
+    >
+      <el-empty
+        v-if="!currentCollection || currentCollection.videos.length === 0"
+        description="该合集暂无视频"
+        :image-size="200"
+      ></el-empty>
+
+      <el-scrollbar
+        v-else
+        wrap-style="height:calc(100vh - 500px);width:calc(100% - 0px);"
+      >
+        <div
+          class="history-item"
+          v-for="(video, index) in currentCollection.videos"
+          :key="index"
+          :xs="24"
+          :sm="12"
+          :md="8"
+          :lg="6"
+        >
+          <el-card
+            class="video-card"
+            :body-style="{ padding: '0px' }"
+            shadow="hover"
+          >
+            <div class="video-thumbnail">
+              <el-image
+                :src="video.thumbnail || '/placeholder.jpg'"
+                :alt="video.title"
+                fit="cover"
+              ></el-image>
+              <div class="play-icon-overlay" @click="playVideo(video)">
+                <el-icon class="play-icon"><VideoPlay /></el-icon>
+              </div>
+            </div>
+            <div class="video-info">
+              <h3>{{ video.title }}</h3>
+              <span>{{ video.text }}</span>
+              <div class="video-actions">
+                <el-button
+                  @click.stop="
+                    removeFromCollection(video, currentCollection.id)
+                  "
+                  type="danger"
+                  size="small"
+                  plain
+                >
+                  移除
+                </el-button>
+              </div>
+              <div class="time">{{ video.time }}</div>
+            </div>
+          </el-card>
+        </div>
+      </el-scrollbar>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showCollectionVideosDialog = false"
+            >关闭</el-button
+          >
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -196,6 +320,8 @@ import Generater from "../tool/generater";
 
 import VideoPlayer from "../components/VideoPlayer.vue";
 
+import { DEFAULT_COLLECTION_COVER } from "../const/const";
+
 const router = useRouter();
 const favoritesStore = useFavoritesStore();
 const activeTab = ref("history");
@@ -204,20 +330,6 @@ const showPlayer = ref(false);
 const playerSource = ref("");
 const playerType = ref("");
 const playerTitle = ref("");
-
-// 播放合集视频
-function playFavoriteVideo(video) {
-  router.push({
-    name: "player",
-    params: {
-      source: video.source,
-      id: encodeURIComponent(video.id),
-    },
-    query: {
-      title: video.title,
-    },
-  });
-}
 
 // 播放历史视频
 function playVideo(video) {
@@ -228,53 +340,75 @@ function playVideo(video) {
   showPlayer.value = true;
 }
 
-// 添加到收藏
-async function addToCollection(video) {
-  // favoritesStore.addFavorite({
-  //   id: video.id || video.path,
-  //   title: video.title || video.name,
-  //   source: video.source || "local",
-  //   path: video.path,
-  //   type: "local",
-  // });
-
-  await Collection.pushVideo2Collection("", video);
-
-  ElMessage({
-    message: `已将 ${video.title || video.name} 添加到合集`,
-    type: "success",
-    duration: 2000,
-  });
-}
-
-// 从合集中移除
-function removeFromCollection(video) {
-  favoritesStore.removeFavorite(video.id);
-
-  ElMessage({
-    message: `已将 ${video.title} 从合集中移除`,
-    type: "success",
-    duration: 2000,
-  });
-}
-
 // 添加合集相关变量
 const showCollectionDialog = ref(false);
 const collectionForm = ref({
-  name: "",
+  title: "",
+  description: "",
   coverUrl: "",
-  coverFile: null,
 });
 
+// 添加选择合集对话框相关变量
+const showSelectCollectionDialog = ref(false);
+const selectedCollection = ref(null);
+const videoToAdd = ref(null);
+
+async function addToCollection(video) {
+  videoToAdd.value = video;
+  showSelectCollectionDialog.value = true;
+}
+
+async function confirmAddToCollection() {
+  if (!selectedCollection.value) {
+    ElMessage.warning("请选择一个合集");
+    return;
+  }
+  if (!videoToAdd.value) {
+    ElMessage.warning("没有要添加的视频");
+    return;
+  }
+
+  console.log("selectedCollection", selectedCollection.value);
+  console.log("videoToAdd", videoToAdd.value);
+  const collectionId = selectedCollection.value;
+  const video = videoToAdd.value;
+  const res = await Collection.pushVideo2Collection(collectionId, video);
+  if (!res.success) {
+    ElMessage.warning(res.message);
+  } else {
+    ElMessage.success("添加成功");
+  }
+  showSelectCollectionDialog.value = false;
+  collection.value = await Collection.getCollections();
+}
+
+const removeFromCollection = async (video, collectionId) => {
+  const res = await Collection.removeVideoFromCollection(collectionId, video);
+  collection.value = await Collection.getCollections();
+  const res2 = await Collection.getCollection(collectionId);
+  if (!res.success) {
+    ElMessage.warning(res.message);
+  } else {
+    currentCollection.value = res2.data;
+  }
+};
 // 添加合集函数
 function addCollection() {
   showCollectionDialog.value = true;
   collectionForm.value = {
-    name: "",
-    coverUrl: "",
-    coverFile: null,
+    title: "",
+    description: "",
+    coverUrl: DEFAULT_COLLECTION_COVER,
   };
 }
+
+const generateCover = async (coll) => {
+  const thumbnails = coll.videos.map((video) => video.thumbnail);
+  const cover = await Generater.generateThumbnailCloud(thumbnails);
+  coll.coverUrl = cover;
+  await Collection.updateCollection(coll);
+  collection.value = await Collection.getCollections();
+};
 
 // 处理封面图片变更
 function handleCoverChange(file) {
@@ -291,14 +425,27 @@ function handleCoverChange(file) {
     return;
   }
 
-  collectionForm.value.coverFile = file.raw;
-  collectionForm.value.coverUrl = URL.createObjectURL(file.raw);
+  // 将文件转换为 Base64 格式
+  const reader = new FileReader();
+  reader.readAsDataURL(file.raw);
+  reader.onload = () => {
+    collectionForm.value.coverUrl = reader.result;
+  };
+}
+
+// 添加查看合集内容相关变量
+const showCollectionVideosDialog = ref(false);
+const currentCollection = ref(null);
+
+// 打开合集查看内容
+function openCollection(coll) {
+  currentCollection.value = coll;
+  showCollectionVideosDialog.value = true;
 }
 
 // 删除封面图片
 function removeCoverImage(e) {
   e.stopPropagation(); // 阻止事件冒泡
-  collectionForm.value.coverFile = null;
   collectionForm.value.coverUrl = "";
 
   // 如果有创建的对象URL，需要释放它
@@ -312,7 +459,7 @@ function removeCoverImage(e) {
 
 // 保存合集
 async function saveCollection() {
-  if (!collectionForm.value.name.trim()) {
+  if (!collectionForm.value.title.trim()) {
     ElMessage.warning("请输入合集名称");
     return;
   }
@@ -320,21 +467,22 @@ async function saveCollection() {
   // 生成基于标题和当前时间的唯一ID
   const timestamp = new Date().getTime();
   const uniqueId = Generater.generateName(
-    `${collectionForm.value.name}-${timestamp}`
+    `${collectionForm.value.title}-${timestamp}`
   );
 
   // 创建一个新合集
   const newCollection = {
     id: uniqueId,
-    title: collectionForm.value.name,
+    title: collectionForm.value.title,
+    description: collectionForm.value.description,
     coverUrl: collectionForm.value.coverUrl,
     videos: [],
   };
-  await Collection.pushCollection(`${uniqueId}.json`, newCollection);
+  await Collection.pushCollection(uniqueId, newCollection);
   collection.value = await Collection.getCollections();
 
   ElMessage({
-    message: `已创建合集: ${collectionForm.value.name}`,
+    message: `已创建合集: ${collectionForm.value.title}`,
     type: "success",
     duration: 2000,
   });
@@ -346,9 +494,11 @@ const history = ref([]);
 const collection = ref([]);
 
 onMounted(async () => {
+  // await Collection.clearCollections();
   history.value = await History.getHistory();
   collection.value = await Collection.getCollections();
   console.log("history", history.value);
+  console.log("collection", collection.value);
 });
 </script>
 
@@ -533,6 +683,24 @@ onMounted(async () => {
     color: var(--el-text-color-secondary);
     font-size: 12px;
     margin-top: 8px;
+  }
+}
+
+.select-collection-dialog {
+  .collection-select-list {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .collection-select-content {
+    width: 80px;
+  }
+}
+.collection-videos-dialog {
+  .el-dialog__body {
+    padding: 0px !important;
+    overflow: hidden;
   }
 }
 </style>

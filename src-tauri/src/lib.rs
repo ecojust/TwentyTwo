@@ -285,6 +285,55 @@ async fn http_get(url: String, headers: Option<serde_json::Value>) -> Result<Ret
 }
 
 #[tauri::command]
+async fn http_blob(url: String, headers: Option<serde_json::Value>) -> Result<Ret, String> {
+    println!("发起二进制文件请求: {}", url);
+    
+    let client = reqwest::Client::new();
+    let mut request_builder = client.get(&url);
+    
+    // 如果提供了headers，添加到请求中
+    if let Some(headers_value) = headers {
+        if let Some(headers_obj) = headers_value.as_object() {
+            for (key, value) in headers_obj {
+                if let Some(value_str) = value.as_str() {
+                    request_builder = request_builder.header(key, value_str);
+                }
+            }
+        }
+    }
+    
+    // 发送请求并处理二进制响应
+    match request_builder.send().await {
+        Ok(response) => {
+            let status = response.status();
+            
+            // 尝试获取二进制响应内容
+            match response.bytes().await {
+                Ok(bytes) => {
+                    // 将二进制数据转换为base64
+                    let base64_data = base64::encode(&bytes);
+                    Ok(Ret {
+                        success: status.is_success(),
+                        message: Some(format!("请求状态码: {}", status)),
+                        data: Some(base64_data),
+                    })
+                },
+                Err(e) => Ok(Ret {
+                    success: false,
+                    message: Some(format!("读取二进制响应内容失败: {}", e)),
+                    data: None,
+                }),
+            }
+        },
+        Err(e) => Ok(Ret {
+            success: false,
+            message: Some(format!("请求失败: {}", e)),
+            data: None,
+        }),
+    }
+}
+
+#[tauri::command]
 fn fetch_request(url: String) -> Result<Ret, String> {
     let interceptor = Arc::new(MinimalInterceptor::new());
 
@@ -325,7 +374,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![fetch_url, http_get, fetch_request])
+        .invoke_handler(tauri::generate_handler![fetch_url, http_get, http_blob, fetch_request])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
