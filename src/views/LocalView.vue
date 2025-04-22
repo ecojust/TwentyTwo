@@ -139,9 +139,7 @@
     >
       <VideoPlayer
         v-if="showPlayer"
-        :video-sources="playerSource"
-        :video-title="playerTitle"
-        :video-type="playerType"
+        :video="currentVideo"
         @onClose="showPlayer = false"
       ></VideoPlayer>
     </el-dialog>
@@ -317,6 +315,7 @@ import { ElMessage } from "element-plus";
 import History from "../tool/history";
 import Collection from "../tool/collection";
 import Generater from "../tool/generater";
+import Plugin from "../tool/plugin";
 
 import VideoPlayer from "../components/VideoPlayer.vue";
 
@@ -327,16 +326,14 @@ const favoritesStore = useFavoritesStore();
 const activeTab = ref("history");
 
 const showPlayer = ref(false);
-const playerSource = ref("");
-const playerType = ref("");
-const playerTitle = ref("");
+
+const currentVideo = ref({});
 
 // 播放历史视频
 function playVideo(video) {
   console.log("playVideo", video);
-  playerSource.value = video.video_urls || [];
-  playerType.value = video.type;
-  playerTitle.value = video.title;
+  currentVideo.value = video;
+
   showPlayer.value = true;
 }
 
@@ -494,8 +491,10 @@ const history = ref([]);
 const collection = ref([]);
 
 onMounted(async () => {
+  await Plugin.setPlugin();
+
   // await Collection.clearCollections();
-  await History.clearHistory();
+  // await History.clearHistory();
   history.value = await History.getHistory();
 
   collection.value = await Collection.getCollections();

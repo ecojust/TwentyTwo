@@ -103,9 +103,7 @@
     >
       <VideoPlayer
         v-if="showPlayer"
-        :video-sources="playerSource"
-        :video-title="playerTitle"
-        :video-type="playerType"
+        :video="currentVideo"
         @onClose="showPlayer = false"
       ></VideoPlayer>
     </el-dialog>
@@ -142,9 +140,7 @@ const searchResults = ref([]);
 
 // 播放器相关状态
 const showPlayer = ref(false);
-const playerSource = ref("");
-const playerType = ref("");
-const playerTitle = ref("");
+const currentVideo = ref({});
 
 /**
  * 搜索视频
@@ -201,10 +197,7 @@ async function playVideo(video) {
   await History.pushHistory(video);
   status.value = "等待操作...";
 
-  // 设置播放器参数并显示
-  playerTitle.value = video.title;
-  playerSource.value = video.video_urls;
-  // playerType.value = video.type;
+  currentVideo.value = video;
   showPlayer.value = true;
   await nextTick();
 }
