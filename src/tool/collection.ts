@@ -65,7 +65,7 @@ export default class Collection {
 
     if (res?.success && res.data) {
       const collection: ICollection = JSON.parse(res.data);
-      if (collection.videos.find((item) => item.play_url === data.play_url)) {
+      if (collection.videos.find((item) => item.href === data.href)) {
         console.log("pushVideo2Collection", "already exists");
         return {
           success: false,
@@ -87,7 +87,7 @@ export default class Collection {
     if (res?.success && res.data) {
       const collection: ICollection = JSON.parse(res.data);
       collection.videos = collection.videos.filter(
-        (item) => item.play_url !== data.play_url
+        (item) => item.href !== data.href
       );
       console.log("removeVideoFromCollection", collection.videos);
       // collection.videos.push(data);

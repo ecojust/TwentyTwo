@@ -167,6 +167,7 @@ const switchVideo = async (video) => {
 // Clean up when component is unmounted
 onMounted(async () => {
   handleMouseMove();
+  console.log("props.video", props.video);
   videoSources.value = [...(props.video.video_urls || [])];
   if (videoSources.value[0]) {
     await switchVideo(videoSources.value[0]);
