@@ -11,7 +11,7 @@ export interface IPlugin {
   };
   detail: {
     description: string;
-    parse: (html: string) => string;
+    parse: (html: string) => string | string[];
   };
   play: {
     mediaType: string;
@@ -36,10 +36,15 @@ export interface IHistory {
   time: string;
 }
 
+export interface IPlayer {
+  origin: string;
+  real: string;
+}
+
 export interface IVideo {
   title: string;
   type: string;
-  play_url: string;
+  video_urls: Array<IPlayer>;
   thumbnail?: string;
   time: string;
   href?: string;

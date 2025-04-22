@@ -8,7 +8,7 @@
     <div class="player-header" :class="{ 'controls-hidden': controlsHidden }">
       <div class="tv-style-title">{{ videoTitle }}</div>
 
-      <span>{{ videoSource }}</span>
+      <span>{{ currentVideo.real }}</span>
       <el-button
         class="player-header-close"
         type="primary"
@@ -21,7 +21,7 @@
 
     <iframe
       v-if="computedVideoType == 'iframe'"
-      :src="videoSource"
+      :src="currentVideo.real"
       frameborder="0"
     ></iframe>
     <video
@@ -33,7 +33,7 @@
       @timeupdate="updateProgress"
       @loadedmetadata="videoLoaded"
     >
-      <source :src="videoSource" :type="computedVideoType" />
+      <source :src="currentVideo.real" :type="computedVideoType" />
       您的浏览器不支持 HTML5 视频播放。
     </video>
   </div>
@@ -45,8 +45,8 @@ import { Close } from "@element-plus/icons-vue";
 
 const emit = defineEmits(["on-close"]);
 const props = defineProps({
-  videoSource: {
-    type: String,
+  videoSources: {
+    type: Array,
     required: true,
   },
   videoType: {
@@ -59,11 +59,16 @@ const props = defineProps({
   },
 });
 
+const currentVideo = ref({
+  origin: "",
+  real: "",
+});
+
 // 根据视频URL自动分析视频类型
 const computedVideoType = computed(() => {
   const extension =
     props.videoType?.toLowerCase() ||
-    props.videoSource.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
+    currentVideo.value.real.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
 
   // 根据扩展名映射到MIME类型
   const mimeTypes = {
@@ -124,14 +129,19 @@ const handleClose = () => {
 
 // Clean up when component is unmounted
 onMounted(() => {
-  if (!videoRef.value) return;
-  videoRef.value.load();
-  videoRef.value.play().catch((err) => {
-    console.error("自动播放失败:", err);
-  });
+  handleMouseMove();
+
+  console.log("props.videoSources", props.videoSources);
+
+  if (props.videoSources.length == 0) return;
+  currentVideo.value = props.videoSources[0];
+  // if (!videoRef.value) return;
+  // videoRef.value.load();
+  // videoRef.value.play().catch((err) => {
+  //   console.error("自动播放失败:", err);
+  // });
 
   // 初始化时启动隐藏控制栏的定时器
-  handleMouseMove();
 });
 
 // 组件卸载时清除定时器

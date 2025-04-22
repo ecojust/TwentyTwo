@@ -139,7 +139,7 @@
     >
       <VideoPlayer
         v-if="showPlayer"
-        :video-source="playerSource"
+        :video-sources="playerSource"
         :video-title="playerTitle"
         :video-type="playerType"
         @onClose="showPlayer = false"
@@ -334,7 +334,7 @@ const playerTitle = ref("");
 // 播放历史视频
 function playVideo(video) {
   console.log("playVideo", video);
-  playerSource.value = video.play_url;
+  playerSource.value = video.video_urls || [];
   playerType.value = video.type;
   playerTitle.value = video.title;
   showPlayer.value = true;
@@ -495,7 +495,9 @@ const collection = ref([]);
 
 onMounted(async () => {
   // await Collection.clearCollections();
+  await History.clearHistory();
   history.value = await History.getHistory();
+
   collection.value = await Collection.getCollections();
   console.log("history", history.value);
   console.log("collection", collection.value);

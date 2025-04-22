@@ -13,7 +13,33 @@
 </template>
 
 <script setup>
+import { onMounted, ref } from "vue";
 import FreshNavbar from "./components/FreshNavbar.vue";
+import { invoke } from "@tauri-apps/api/core";
+
+const iframeRef = ref(null);
+
+onMounted(async () => {
+  // await invoke("fetch_request", {
+  //   url: "https://tv.yinghuadongman.info/play_4945-1-1.html",
+  // });
+  // setTimeout(() => {
+  //   console.log(
+  //     "iframeRef.value.contentWindow.document.body",
+  //     iframeRef.value.contentWindow.document.body
+  //   );
+  // }, 5000);
+  // 创建无头浏览器并执行脚本
+  // const result = await invoke("create_headless_browser", {
+  //   url: "https://tv.yinghuadongman.info/play_4945-1-3.html",
+  //   visible: true, // 设为true可以看到浏览器窗口
+  //   script:
+  //     "(function() { return document.querySelector('#player').innerHTML; })()", // 使用IIFE包装return语句
+  // });
+  // // 解析返回的数据
+  // const data = JSON.parse(result.data);
+  // console.log("脚本执行结果:", data);
+});
 </script>
 
 <style lang="less">

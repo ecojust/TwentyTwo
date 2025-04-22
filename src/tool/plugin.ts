@@ -1,9 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import * as cheerio from "cheerio";
-import { IPlugin, IResult } from "../const/interface";
 import File from "./file";
 import Config from "./config";
 import { PLUGIN_FOLDER_NAME, DRAFT_PLUGIN_FILE } from "../const/const";
+import { IPlugin, IResult, IPlayer } from "../const/interface";
 
 export default class Plugin {
   static _currentPlugin: IPlugin;
@@ -105,7 +105,7 @@ export default class Plugin {
   }
 
   static async getPlayUrl(detail_url: string, updateMessage: Function) {
-    let play_url = detail_url,
+    let play_url: string | string[] = detail_url,
       res = {} as IResult;
 
     let message = "";
@@ -120,24 +120,68 @@ export default class Plugin {
       play_url = this._currentPlugin.detail.parse(html);
     }
 
-    message += ";解析播放页...";
-    updateMessage(message);
+    let video_urls: Array<IPlayer> = [];
+
+    if (typeof play_url === "string") {
+      video_urls = await this.parseVideoUrl(play_url);
+    } else {
+      video_urls = play_url.map((item) => {
+        return {
+          origin: item,
+          real: "",
+        };
+      });
+    }
+
+    return {
+      success: true,
+      message: "解析成功",
+      data: video_urls,
+    };
+
+    // message += ";解析播放页...";
+    // updateMessage(message);
+    // res = (await this._fetchIPC(
+    //   play_url as string,
+    //   this._currentPlugin.play.parseType || "html"
+    // )) as IResult;
+    // if (!res.success) {
+    //   return res;
+    // }
+    // const video_url = this._currentPlugin.play.parse(res.data);
+
+    // message += ";解析结束，即将播放...";
+    // updateMessage(message);
+    // return {
+    //   success: true,
+    //   message: "解析成功",
+    //   data: video_url,
+    //   type: this._currentPlugin.play.mediaType,
+    // };
+  }
+
+  static async parseVideoUrl(play_url: string): Promise<IPlayer[]> {
+    let res = {} as IResult;
+    //播放页解析，返回视频地址
     res = (await this._fetchIPC(
       play_url as string,
       this._currentPlugin.play.parseType || "html"
     )) as IResult;
     if (!res.success) {
-      return res;
+      return [
+        {
+          origin: play_url,
+          real: "",
+        },
+      ];
+    } else {
+      const real = this._currentPlugin.play.parse(res.data);
+      return [
+        {
+          origin: play_url,
+          real: real,
+        },
+      ];
     }
-    const video_url = this._currentPlugin.play.parse(res.data);
-
-    message += ";解析结束，即将播放...";
-    updateMessage(message);
-    return {
-      success: true,
-      message: "解析成功",
-      data: video_url,
-      type: this._currentPlugin.play.mediaType,
-    };
   }
 }

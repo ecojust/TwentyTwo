@@ -103,7 +103,7 @@
     >
       <VideoPlayer
         v-if="showPlayer"
-        :video-source="playerSource"
+        :video-sources="playerSource"
         :video-title="playerTitle"
         :video-type="playerType"
         @onClose="showPlayer = false"
@@ -178,20 +178,22 @@ async function searchVideos() {
  */
 async function playVideo(video) {
   // 如果没有播放链接，先获取
-  if (!video.play_url) {
+  if (!video.video_urls || video.video_urls.length === 0) {
     const res = await Plugin.getPlayUrl(video.href, (msg) => {
       status.value = msg;
     });
     console.log("获取播放链接", res);
 
     if (res.success) {
-      video.play_url = res.data;
-      video.type = res.type;
       if (!res.data) {
         status.value = `获取播放链接失败：值为空`;
         return;
       }
+      video.video_urls = res.data;
     } else {
+      //
+      status.value = res.message;
+      return;
     }
   }
 
@@ -201,8 +203,8 @@ async function playVideo(video) {
 
   // 设置播放器参数并显示
   playerTitle.value = video.title;
-  playerSource.value = video.play_url;
-  playerType.value = video.type;
+  playerSource.value = video.video_urls;
+  // playerType.value = video.type;
   showPlayer.value = true;
   await nextTick();
 }
