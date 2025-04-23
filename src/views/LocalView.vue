@@ -240,10 +240,13 @@
     <!-- 添加查看合集内容的对话框 -->
     <el-dialog
       v-model="showCollectionVideosDialog"
-      :title="currentCollection ? currentCollection.title : '合集内容'"
+      title=""
       width="70%"
       class="collection-videos-dialog"
     >
+      <div class="title">
+        <el-input v-model="currentCollection.title"></el-input>
+      </div>
       <el-empty
         v-if="!currentCollection || currentCollection.videos.length === 0"
         description="该合集暂无视频"
@@ -314,29 +317,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useFavoritesStore } from "../stores/favorites";
+import { ref, computed, onMounted, onActivated } from "vue";
 import { VideoPlay, Delete, Plus } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import History from "../tool/history";
 import Collection from "../tool/collection";
 import Generater from "../tool/generater";
 import Plugin from "../tool/plugin";
-
 import VideoPlayer from "../components/VideoPlayer.vue";
-
 import { DEFAULT_COLLECTION_COVER } from "../const/const";
 
-const router = useRouter();
-const favoritesStore = useFavoritesStore();
 const activeTab = ref("history");
-
 const showPlayer = ref(false);
-
 const currentVideo = ref({});
-
 const playMode = ref("history");
+const showCollectionDialog = ref(false);
+const collectionForm = ref({
+  title: "",
+  description: "",
+  coverUrl: "",
+});
+const showSelectCollectionDialog = ref(false);
+const selectedCollection = ref(null);
+const videoToAdd = ref(null);
+const showCollectionVideosDialog = ref(false);
+const currentCollection = ref(null);
+const history = ref([]);
+const collection = ref([]);
 
 const updateVideo = (video_urls) => {
   Object.assign(currentVideo.value, {
@@ -361,19 +368,6 @@ function playVideo(video, type) {
   currentVideo.value = video;
   showPlayer.value = true;
 }
-
-// 添加合集相关变量
-const showCollectionDialog = ref(false);
-const collectionForm = ref({
-  title: "",
-  description: "",
-  coverUrl: "",
-});
-
-// 添加选择合集对话框相关变量
-const showSelectCollectionDialog = ref(false);
-const selectedCollection = ref(null);
-const videoToAdd = ref(null);
 
 async function addToCollection(video) {
   videoToAdd.value = video;
@@ -455,10 +449,6 @@ function handleCoverChange(file) {
   };
 }
 
-// 添加查看合集内容相关变量
-const showCollectionVideosDialog = ref(false);
-const currentCollection = ref(null);
-
 // 打开合集查看内容
 function openCollection(coll) {
   currentCollection.value = coll;
@@ -508,23 +498,25 @@ async function saveCollection() {
     type: "success",
     duration: 2000,
   });
-
   showCollectionDialog.value = false;
 }
 
-const history = ref([]);
-const collection = ref([]);
-
-onMounted(async () => {
+const init = async () => {
   await Plugin.setPlugin();
-
-  // await Collection.clearCollections();
-  // await History.clearHistory();
   history.value = await History.getHistory();
-
   collection.value = await Collection.getCollections();
   console.log("history", history.value);
   console.log("collection", collection.value);
+};
+
+onActivated(async () => {
+  await init();
+});
+
+onMounted(async () => {
+  // await Collection.clearCollections();
+  // await History.clearHistory();
+  await init();
 });
 </script>
 

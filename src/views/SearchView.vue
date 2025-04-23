@@ -118,36 +118,23 @@ import { usePluginsStore } from "../stores/plugins";
 import { useFavoritesStore } from "../stores/favorites";
 import { Close, VideoPlay } from "@element-plus/icons-vue";
 import VideoPlayer from "../components/VideoPlayer.vue";
-
-// 导入工具类
 import Plugin from "../tool/plugin";
 import History from "../tool/history";
 
-// 初始化 store
 const router = useRouter();
 const pluginsStore = usePluginsStore();
 const favoritesStore = useFavoritesStore();
-
-// 状态管理
 const status = ref("输入关键字开始查询");
 const activePlugin = ref("");
-
-// 搜索相关状态
 const searchQuery = ref("成龙");
 const isSearching = ref(false);
 const hasSearched = ref(false);
 const searchResults = ref([]);
-
-// 播放器相关状态
 const showPlayer = ref(false);
 const currentVideo = ref({});
 
-/**
- * 搜索视频
- */
 async function searchVideos() {
   if (!searchQuery.value.trim()) return;
-
   status.value = "正在搜索...";
   console.log("开始搜索");
   isSearching.value = true;
@@ -168,10 +155,6 @@ async function searchVideos() {
   }
 }
 
-/**
- * 播放视频
- * @param {Object} video 视频对象
- */
 async function playVideo(video) {
   // 如果没有播放链接，先获取
   if (!video.video_urls || video.video_urls.length === 0) {
@@ -179,7 +162,6 @@ async function playVideo(video) {
       status.value = msg;
     });
     console.log("获取播放链接", res);
-
     if (res.success) {
       if (!res.data) {
         status.value = `获取播放链接失败：值为空`;
@@ -192,36 +174,15 @@ async function playVideo(video) {
       return;
     }
   }
-
   // 添加到历史记录
   await History.pushHistory(video);
   status.value = "等待操作...";
-
   currentVideo.value = video;
   showPlayer.value = true;
   await nextTick();
 }
 
-/**
- * 添加到收藏
- * @param {Object} video 视频对象
- */
-function addToFavorites(video) {
-  favoritesStore.addFavorite(video);
-}
-
-// onActivated(async () => {
-//   await Plugin.setPlugin();
-//   if (!Plugin._currentPlugin) {
-//     status.value = "请先安装插件";
-//   } else {
-//     activePlugin.value = Plugin._currentPlugin.name;
-//     status.value = "输入关键字开始查询";
-//   }
-// });
-
-// 生命周期钩子
-onMounted(async () => {
+const pluginActive = async () => {
   await Plugin.setPlugin();
   if (!Plugin._currentPlugin) {
     status.value = "请先安装插件";
@@ -229,6 +190,14 @@ onMounted(async () => {
     activePlugin.value = Plugin._currentPlugin.name;
     status.value = "输入关键字开始查询";
   }
+};
+
+onActivated(async () => {
+  await pluginActive();
+});
+
+onMounted(async () => {
+  await pluginActive();
 });
 </script>
 

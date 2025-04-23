@@ -156,7 +156,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  onActivated,
+} from "vue";
 import { usePluginsStore } from "../stores/plugins";
 // 移除未使用的 open 导入
 import { Upload } from "@element-plus/icons-vue";
@@ -167,27 +174,22 @@ import { Close } from "@element-plus/icons-vue";
 import Event from "../tool/event";
 import Plugin from "../tool/plugin";
 
-const pluginsStore = usePluginsStore();
-
 const longPress = () => {
   return Event.longPress(1000, handleOpenEditorDialog).value;
 };
-
+const pluginsStore = usePluginsStore();
 const monacoContainer = ref(null);
 const consoleOutput = ref(null);
-// 移除未使用的 logs 变量
 const pluginUrl = ref("");
 const isImporting = ref(false);
 const showImportDialog = ref(false);
 const showDevDialog = ref(false);
 const searchList = ref([]);
 const detailInfo = ref({});
-// 移除未使用的 playUrl 变量
 const config = ref({
   theme: "light",
   active_plugin: "",
 });
-// 简化测试数据
 const result = ref([]);
 const plugins = computed(() => pluginsStore.plugins);
 const showSearch = ref(true);
@@ -308,18 +310,21 @@ const deletePlugin = async (plugin) => {
   }
 };
 
-// 移除未使用的 clearLogs 函数
-
-onMounted(async () => {
+const init = async () => {
   try {
     await pluginsStore.loadPlugins();
     config.value = await Config.getConfiguration();
   } catch (error) {
     console.error("初始化失败:", error);
   }
+};
 
-  console.log("plugins", plugins.value);
-  console.log("config", config.value);
+onActivated(async () => {
+  await init();
+});
+
+onMounted(async () => {
+  await init();
 });
 
 onBeforeUnmount(() => {
