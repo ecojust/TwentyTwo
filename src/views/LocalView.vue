@@ -109,7 +109,9 @@
                         {{ coll.author }}
                       </span>
                     </el-text>
-                    <el-button @click.stop="exportCollection(coll)"
+                    <el-button
+                      class="copy-collection"
+                      @click.stop="exportCollection(coll)"
                       >拷贝合集</el-button
                     >
                     <div class="video-actions"></div>
@@ -770,7 +772,7 @@ onMounted(async () => {
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
-    .el-button {
+    .copy-collection {
       // float: right;
       position: absolute;
       right: 10px;
@@ -780,7 +782,7 @@ onMounted(async () => {
   }
 
   .collection-item:hover {
-    .el-button {
+    .copy-collection {
       opacity: 1;
     }
   }
