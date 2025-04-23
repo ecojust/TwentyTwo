@@ -379,7 +379,7 @@
 <script setup>
 import { ref, computed, onMounted, onActivated } from "vue";
 import { VideoPlay, Delete, Plus, Check } from "@element-plus/icons-vue"; // 添加 Delete 图标
-import { ElMessage } from "element-plus";
+import { ElMessageBox, ElMessage } from "element-plus";
 import History from "../tool/history";
 import Collection from "../tool/collection";
 import Generater from "../tool/generater";
@@ -532,13 +532,36 @@ function addCollection() {
 }
 
 const deleteCollection = async () => {
-  const res = await Collection.deleteCollection(currentCollection.value.id);
-  if (!res.success) {
-    ElMessage.warning(res.message);
-  } else {
-    ElMessage.success("删除成功");
-    collection.value = await Collection.getCollections();
-    showCollectionVideosDialog.value = false;
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除合集 "${currentCollection.value.title}" 吗？`,
+      "警告",
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      }
+    )
+      .then(async () => {
+        const res = await Collection.deleteCollection(
+          currentCollection.value.id
+        );
+        if (!res.success) {
+          ElMessage.warning(res.message);
+        } else {
+          ElMessage.success("删除成功");
+          collection.value = await Collection.getCollections();
+          showCollectionVideosDialog.value = false;
+        }
+      })
+      .catch(() => {
+        // ElMessage({
+        //   type: "info",
+        //   message: "Delete canceled",
+        // });
+      });
+  } catch {
+    // 用户点击取消按钮时，不执行任何操作
   }
 };
 
