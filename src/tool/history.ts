@@ -17,6 +17,18 @@ export default class History {
     }
   }
 
+  static async updateHistoryItem(data: IVideo) {
+    const res = await File._readFile(HISTORY_FILE_NAME, JSON.stringify([]));
+    const history = JSON.parse(res?.data || "[]");
+    const index = history.findIndex((item: IVideo) => item.time === data.time);
+    if (index !== -1) {
+      history.splice(index, 1);
+    }
+    history.unshift(data);
+    history.splice(30, history.length - 30);
+    await File._writeFile(HISTORY_FILE_NAME, JSON.stringify(history));
+  }
+
   static async pushHistory(data: IVideo) {
     const res = await File._readFile(HISTORY_FILE_NAME, JSON.stringify([]));
     const history = JSON.parse(res?.data || "[]");

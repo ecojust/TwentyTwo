@@ -38,7 +38,10 @@
                       fit="cover"
                     ></el-image>
                     <!-- 添加居中的播放图标 -->
-                    <div class="play-icon-overlay" @click="playVideo(result)">
+                    <div
+                      class="play-icon-overlay"
+                      @click="playVideo(result, 'history')"
+                    >
                       <el-icon class="play-icon"><VideoPlay /></el-icon>
                     </div>
                   </div>
@@ -140,7 +143,8 @@
       <VideoPlayer
         v-if="showPlayer"
         :video="currentVideo"
-        @onClose="showPlayer = false"
+        @on-close="showPlayer = false"
+        @on-update="updateVideo"
       ></VideoPlayer>
     </el-dialog>
 
@@ -270,7 +274,10 @@
                 :alt="video.title"
                 fit="cover"
               ></el-image>
-              <div class="play-icon-overlay" @click="playVideo(video)">
+              <div
+                class="play-icon-overlay"
+                @click="playVideo(video, 'collection')"
+              >
                 <el-icon class="play-icon"><VideoPlay /></el-icon>
               </div>
             </div>
@@ -329,11 +336,29 @@ const showPlayer = ref(false);
 
 const currentVideo = ref({});
 
-// 播放历史视频
-function playVideo(video) {
+const playMode = ref("history");
+
+const updateVideo = (video_urls) => {
+  Object.assign(currentVideo.value, {
+    video_urls: video_urls,
+  });
+  switch (playMode.value) {
+    case "history":
+      History.updateHistoryItem(currentVideo.value);
+      break;
+    case "collection":
+      Collection.updateCollectionItem(
+        currentCollection.value.id,
+        currentVideo.value
+      );
+      break;
+  }
+};
+
+function playVideo(video, type) {
+  playMode.value = type;
   console.log("playVideo", video);
   currentVideo.value = video;
-
   showPlayer.value = true;
 }
 

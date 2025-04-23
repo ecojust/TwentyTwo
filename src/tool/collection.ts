@@ -59,6 +59,24 @@ export default class Collection {
     return File._deleteFile(`${COLLECTION_FOLDER_NAME}/${name}.json`);
   }
 
+  static async updateCollectionItem(collectionId: string, data: IVideo) {
+    const file_name = `${COLLECTION_FOLDER_NAME}/${collectionId}.json`;
+    const res = await File._readFile(file_name);
+    if (res?.success && res.data) {
+      const collection: ICollection = JSON.parse(res.data);
+      const index = collection.videos.findIndex(
+        (item) => item.href === data.href
+      );
+      if (index !== -1) {
+        collection.videos[index] = data;
+      } else {
+        collection.videos.push(data);
+      }
+      const res2 = await File._writeFile(file_name, JSON.stringify(collection));
+      return res2;
+    }
+  }
+
   static async pushVideo2Collection(collectionId: string, data: IVideo) {
     const file_name = `${COLLECTION_FOLDER_NAME}/${collectionId}.json`;
     const res = await File._readFile(file_name);

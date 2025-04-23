@@ -23,6 +23,7 @@
       :src="currentVideo.real"
       frameborder="0"
     ></iframe>
+
     <video
       v-else
       ref="videoRef"
@@ -48,9 +49,7 @@
           @click="switchVideo(source)"
         >
           <span>第 {{ index + 1 }} 集</span>
-          <el-icon v-if="source.real === currentVideo.real" class="check-icon"
-            ><Check
-          /></el-icon>
+          <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
         </div>
       </div>
     </div>
@@ -63,7 +62,7 @@ import { Close, Check } from "@element-plus/icons-vue";
 import Plugin from "../tool/plugin";
 // import { IVideo } from "../const/interface";
 
-const emit = defineEmits(["on-close", "on-update-item"]);
+const emit = defineEmits(["on-close", "on-update"]);
 const props = defineProps({
   video: {
     type: Object,
@@ -152,7 +151,8 @@ const switchVideo = async (video) => {
       1,
       res[0]
     );
-    console.log("videoSources.value", videoSources.value);
+
+    emit("on-update", videoSources.value);
   } else {
     currentVideo.value = video;
   }
@@ -167,7 +167,6 @@ const switchVideo = async (video) => {
 // Clean up when component is unmounted
 onMounted(async () => {
   handleMouseMove();
-  console.log("props.video", props.video);
   videoSources.value = [...(props.video.video_urls || [])];
   if (videoSources.value[0]) {
     await switchVideo(videoSources.value[0]);

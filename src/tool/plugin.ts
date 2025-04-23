@@ -161,13 +161,17 @@ export default class Plugin {
   }
 
   static async parseVideoUrl(play_url: string): Promise<IPlayer[]> {
+    console.log("parseVideoUrl使用插件：", this._currentPlugin);
     let res = {} as IResult;
     //播放页解析，返回视频地址
     res = (await this._fetchIPC(
       play_url as string,
       this._currentPlugin.play.parseType || "html"
     )) as IResult;
+
     if (!res.success) {
+      console.log("插件解析失败");
+
       return [
         {
           origin: play_url,
@@ -175,6 +179,8 @@ export default class Plugin {
         },
       ];
     } else {
+      console.log("插件解析成功");
+
       const real = this._currentPlugin.play.parse(res.data);
       return [
         {
