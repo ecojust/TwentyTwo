@@ -55,6 +55,7 @@ export interface IVideo {
 export interface ICollection {
   id: string;
   title: string;
+  author?: string;
   description: string;
   coverUrl: string;
   time: string;

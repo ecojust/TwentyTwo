@@ -1,7 +1,8 @@
 import File from "./file";
 import { IVideo, ICollection, IResult } from "../const/interface";
 import { COLLECTION_FOLDER_NAME } from "../const/const";
-
+import { invoke } from "@tauri-apps/api/core";
+import Generater from "../tool/generater";
 export default class Collection {
   static async clearCollections() {
     const entries = await File._readDir(COLLECTION_FOLDER_NAME);
@@ -53,6 +54,18 @@ export default class Collection {
       JSON.stringify(data)
     );
     return res!;
+  }
+
+  static checkCollectionIsReady(data: ICollection) {
+    const needToParse: Array<string> = [];
+    data.videos.forEach((video) => {
+      video.video_urls.forEach((source, index) => {
+        if (!source.real) {
+          needToParse.push(`${video.title}-${index + 1}`);
+        }
+      });
+    });
+    return needToParse;
   }
 
   static async deleteCollection(name: string): Promise<IResult> {
@@ -122,5 +135,29 @@ export default class Collection {
       `${COLLECTION_FOLDER_NAME}/${id}.json`,
       JSON.stringify(newdata)
     );
+  }
+
+  static async importFromUrl(url: string) {
+    try {
+      const response = (await invoke("http_get", {
+        url: url,
+      })) as IResult;
+      if (!response.success) {
+        throw new Error(`请求失败: ${response.message}`);
+      }
+
+      const collectionName = Generater.generateName(url);
+      const newdata = Object.assign(JSON.parse(response.data), {
+        id: collectionName,
+        time: new Date().toLocaleString(),
+      });
+
+      await File._writeFile(
+        `${COLLECTION_FOLDER_NAME}/${collectionName}.json`,
+        JSON.stringify(newdata)
+      );
+    } catch (error) {
+      //
+    }
   }
 }

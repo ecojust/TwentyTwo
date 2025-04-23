@@ -25,7 +25,7 @@
     ></iframe>
 
     <video
-      v-else
+      v-else-if="computedVideoType.includes('/')"
       ref="videoRef"
       controls
       autoplay
@@ -107,8 +107,9 @@ const computedVideoType = computed(() => {
     m3u8: "application/x-mpegURL",
     ts: "video/mp2t",
     mkv: "video/x-matroska",
+    iframe: "iframe",
   };
-  return mimeTypes[extension] || "iframe";
+  return mimeTypes[extension] || "";
 });
 
 const videoRef = ref(null);
@@ -240,7 +241,7 @@ onUnmounted(() => {
 
       &:hover {
         opacity: 1;
-        background-color: rgba(255, 255, 255, 0.3);
+        background-color: rgba(255, 255, 255, 0.5);
 
         .el-icon {
           transform: scale(1.1);
@@ -265,10 +266,10 @@ onUnmounted(() => {
 
   .episode-list {
     position: absolute;
-    height: calc(100% - 70px);
+    height: calc(100% - 120px);
     right: 0;
-    bottom: 0;
-    width: 200px;
+    top: 50px;
+    width: 120px;
     // background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(8px);
     opacity: 1;

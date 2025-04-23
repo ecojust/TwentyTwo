@@ -79,7 +79,7 @@
           <el-row v-else :gutter="20">
             <el-scrollbar wrap-style="height:calc(100vh - 300px);width:100%;">
               <div
-                class="history-item"
+                class="history-item collection-item"
                 v-for="(coll, index) in collection"
                 :key="index"
                 :xs="24"
@@ -103,14 +103,16 @@
                   </div>
                   <div class="video-info">
                     <h3>{{ coll.title }} ({{ coll.videos.length }})</h3>
-                    <el-text class="video-path" truncated>{{
-                      coll.id
-                    }}</el-text>
-                    <div class="video-actions">
-                      <!-- <el-button @click.stop="generateCover(coll)"
-                        >生成封面</el-button
-                      > -->
-                    </div>
+                    <el-text class="video-path" truncated
+                      >{{ coll.id }}
+                      <span class="author">
+                        {{ coll.author }}
+                      </span>
+                    </el-text>
+                    <el-button @click.stop="exportCollection(coll)"
+                      >拷贝合集</el-button
+                    >
+                    <div class="video-actions"></div>
                   </div>
                 </el-card>
               </div>
@@ -155,44 +157,80 @@
       width="30%"
       :close-on-click-modal="false"
     >
-      <el-form :model="collectionForm" label-width="80px">
-        <el-form-item label="名称" required>
-          <el-input
-            v-model="collectionForm.title"
-            placeholder="请输入合集名称"
-          ></el-input>
-        </el-form-item>
+      <el-tabs v-model="collectionCreateMode">
+        <el-scrollbar wrap-style="height:340px">
+          <el-tab-pane label="手动创建" name="manual">
+            <el-form :model="collectionForm" label-width="80px">
+              <el-form-item label="名称" required>
+                <el-input
+                  v-model="collectionForm.title"
+                  placeholder="请输入合集名称"
+                ></el-input>
+              </el-form-item>
 
-        <el-form-item label="描述">
-          <el-input
-            v-model="collectionForm.description"
-            placeholder="请输入合集描述"
-          ></el-input>
-        </el-form-item>
+              <el-form-item label="描述">
+                <el-input
+                  v-model="collectionForm.description"
+                  placeholder="请输入合集描述"
+                ></el-input>
+              </el-form-item>
 
-        <el-form-item label="封面图">
-          <el-upload
-            class="cover-uploader"
-            action="#"
-            :auto-upload="false"
-            :show-file-list="false"
-            :on-change="handleCoverChange"
-          >
-            <div v-if="collectionForm.coverUrl" class="cover-preview-container">
-              <img :src="collectionForm.coverUrl" class="cover-preview" />
-              <div class="cover-delete-icon" @click.stop="removeCoverImage">
-                <el-icon><Delete /></el-icon>
-              </div>
-            </div>
-            <el-icon v-else class="cover-uploader-icon"><Plus /></el-icon>
-          </el-upload>
-          <div class="cover-tip">默认会以合集内容自动生成封面</div>
-        </el-form-item>
-      </el-form>
+              <el-form-item label="封面图">
+                <el-upload
+                  class="cover-uploader"
+                  action="#"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="handleCoverChange"
+                >
+                  <div
+                    v-if="collectionForm.coverUrl"
+                    class="cover-preview-container"
+                  >
+                    <img :src="collectionForm.coverUrl" class="cover-preview" />
+                    <div
+                      class="cover-delete-icon"
+                      @click.stop="removeCoverImage"
+                    >
+                      <el-icon><Delete /></el-icon>
+                    </div>
+                  </div>
+                  <el-icon v-else class="cover-uploader-icon"><Plus /></el-icon>
+                </el-upload>
+                <div class="cover-tip">默认会以合集内容自动生成封面</div>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+
+          <el-tab-pane label="从URL导入" name="url">
+            <el-form :model="urlImportForm" label-width="80px">
+              <el-form-item label="URL" required>
+                <el-input
+                  v-model="urlImportForm.url"
+                  placeholder="请输入合集URL"
+                  type="textarea"
+                  :rows="3"
+                ></el-input>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+        </el-scrollbar>
+      </el-tabs>
+
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="showCollectionDialog = false">取消</el-button>
-          <el-button type="primary" @click="saveCollection">确定</el-button>
+          <el-button
+            type="primary"
+            @click="
+              collectionCreateMode === 'manual'
+                ? saveCollection()
+                : importCollection()
+            "
+            :loading="importing"
+          >
+            {{ collectionCreateMode === "manual" ? "确定" : "导入" }}
+          </el-button>
         </span>
       </template>
     </el-dialog>
@@ -237,15 +275,37 @@
         </span>
       </template>
     </el-dialog>
+
     <!-- 添加查看合集内容的对话框 -->
     <el-dialog
       v-model="showCollectionVideosDialog"
       title=""
       width="70%"
       class="collection-videos-dialog"
+      :show-close="false"
     >
       <div class="title">
-        <el-input v-model="currentCollection.title"></el-input>
+        <el-input
+          v-model="currentCollection.title"
+          :class="{ editing: isTitleEditing }"
+          @focus="isTitleEditing = true"
+          @blur="handleTitleBlur"
+        ></el-input>
+        <el-button
+          v-if="isTitleEditing"
+          class="confirm-button"
+          type="success"
+          :icon="Check"
+          circle
+          @click="updateCollectionTitle"
+        />
+        <el-button
+          class="delete-button"
+          type="danger"
+          :icon="Delete"
+          circle
+          @click="deleteCollection"
+        />
       </div>
       <el-empty
         v-if="!currentCollection || currentCollection.videos.length === 0"
@@ -318,7 +378,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onActivated } from "vue";
-import { VideoPlay, Delete, Plus } from "@element-plus/icons-vue";
+import { VideoPlay, Delete, Plus, Check } from "@element-plus/icons-vue"; // 添加 Delete 图标
 import { ElMessage } from "element-plus";
 import History from "../tool/history";
 import Collection from "../tool/collection";
@@ -344,6 +404,8 @@ const showCollectionVideosDialog = ref(false);
 const currentCollection = ref(null);
 const history = ref([]);
 const collection = ref([]);
+const isTitleEditing = ref(false);
+const originalTitle = ref("");
 
 const updateVideo = (video_urls) => {
   Object.assign(currentVideo.value, {
@@ -409,14 +471,76 @@ const removeFromCollection = async (video, collectionId) => {
   }
 };
 // 添加合集函数
+// 在其他 ref 变量后添加
+const collectionCreateMode = ref("manual");
+const urlImportForm = ref({
+  url: "",
+});
+const importing = ref(false);
+
+const exportCollection = async (coll) => {
+  try {
+    const needToParse = Collection.checkCollectionIsReady(coll);
+    if (needToParse.length > 0) {
+      ElMessage.warning(
+        `合集 ${coll.title} 中的 ${needToParse.length} 个视频未解析`
+      );
+      return;
+    }
+
+    const collectionData = JSON.stringify(coll, null, 2);
+    await navigator.clipboard.writeText(collectionData);
+    ElMessage.success("合集数据已复制到剪贴板");
+  } catch (error) {
+    console.error("复制失败:", error);
+    ElMessage.error("复制失败，请重试");
+  }
+};
+// 添加导入方法
+const importCollection = async () => {
+  if (!urlImportForm.value.url.trim()) {
+    ElMessage.warning("请输入合集URL");
+    return;
+  }
+
+  importing.value = true;
+  try {
+    // TODO: 实现从URL导入合集的逻辑
+    const result = await Collection.importFromUrl(urlImportForm.value.url);
+    ElMessage.success("导入成功");
+    showCollectionDialog.value = false;
+    collection.value = await Collection.getCollections();
+  } catch (error) {
+    ElMessage.error("导入失败：" + error.message);
+  } finally {
+    importing.value = false;
+  }
+};
+
+// 修改 addCollection 函数
 function addCollection() {
   showCollectionDialog.value = true;
+  collectionCreateMode.value = "manual";
   collectionForm.value = {
     title: "",
     description: "",
     coverUrl: DEFAULT_COLLECTION_COVER,
   };
+  urlImportForm.value = {
+    url: "",
+  };
 }
+
+const deleteCollection = async () => {
+  const res = await Collection.deleteCollection(currentCollection.value.id);
+  if (!res.success) {
+    ElMessage.warning(res.message);
+  } else {
+    ElMessage.success("删除成功");
+    collection.value = await Collection.getCollections();
+    showCollectionVideosDialog.value = false;
+  }
+};
 
 const generateCover = async (coll) => {
   const thumbnails = coll.videos.map((video) => video.thumbnail);
@@ -449,11 +573,33 @@ function handleCoverChange(file) {
   };
 }
 
-// 打开合集查看内容
+// 在 openCollection 函数中添加
 function openCollection(coll) {
   currentCollection.value = coll;
+  originalTitle.value = coll.title; // 保存原始标题
   showCollectionVideosDialog.value = true;
 }
+
+// 添加新的处理函数
+const handleTitleBlur = () => {
+  // 如果标题没有改变，直接退出编辑模式
+  if (currentCollection.value.title === originalTitle.value) {
+    isTitleEditing.value = false;
+  }
+};
+
+const updateCollectionTitle = async () => {
+  if (!currentCollection.value.title.trim()) {
+    ElMessage.warning("标题不能为空");
+    return;
+  }
+
+  await Collection.updateCollection(currentCollection.value);
+  collection.value = await Collection.getCollections();
+  originalTitle.value = currentCollection.value.title;
+  isTitleEditing.value = false;
+  ElMessage.success("标题更新成功");
+};
 
 // 删除封面图片
 function removeCoverImage(e) {
@@ -541,6 +687,7 @@ onMounted(async () => {
     transition: transform 0.3s;
     border-radius: 8px;
     overflow: hidden;
+    position: relative;
 
     &:hover {
       transform: translateY(-5px);
@@ -600,6 +747,19 @@ onMounted(async () => {
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
+    .el-button {
+      // float: right;
+      position: absolute;
+      right: 10px;
+      opacity: 0;
+      transition: all 0.3s;
+    }
+  }
+
+  .collection-item:hover {
+    .el-button {
+      opacity: 1;
+    }
   }
 
   .video-actions {
@@ -621,6 +781,11 @@ onMounted(async () => {
     font-size: 0.9rem;
     color: var(--text-secondary);
     max-width: 300px;
+    .author {
+      color: rgb(255, 102, 0);
+      font-weight: bold;
+      margin-left: 5px;
+    }
   }
 
   .add-collection-thumbnail {
@@ -716,9 +881,65 @@ onMounted(async () => {
   }
 }
 .collection-videos-dialog {
+  header {
+    display: none;
+  }
   .el-dialog__body {
     padding: 0px !important;
     overflow: hidden;
+  }
+
+  .title {
+    // padding: 10px 20px;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    // border-bottom: 1px solid var(--el-border-color-lighter);
+
+    .el-input {
+      width: 200px;
+
+      .el-input__wrapper {
+        box-shadow: none;
+        background: none;
+        padding: 0;
+
+        .el-input__inner {
+          font-size: 16px;
+          height: 32px;
+          padding: 0 8px;
+        }
+
+        &:hover {
+          box-shadow: 0 0 0 1px var(--el-border-color) inset;
+        }
+      }
+
+      &.editing .el-input__wrapper {
+        box-shadow: 0 0 0 1px var(--el-border-color) inset;
+      }
+    }
+
+    .confirm-button {
+      opacity: 0;
+      transition: opacity 0.3s;
+      transform: scale(0.8);
+    }
+
+    .delete-button {
+      position: absolute;
+      right: 10px;
+      // opacity: 0.7;
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    &:hover .confirm-button {
+      opacity: 1;
+    }
   }
 }
 </style>
