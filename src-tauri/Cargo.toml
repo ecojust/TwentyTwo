@@ -1,5 +1,5 @@
 [package]
-name = "video-search"
+name = "twenty-two"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
