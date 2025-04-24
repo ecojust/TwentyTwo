@@ -5,7 +5,7 @@
         <div class="app-logo">
           <el-image
             src="/logo.png"
-            alt="VideoSearch Logo"
+            alt="TwentyTwo Logo"
             fit="contain"
           ></el-image>
         </div>
@@ -14,7 +14,7 @@
 
         <el-scrollbar wrap-style="height:calc(100vh - 430px);width:100%;">
           <div class="app-description">
-            <p>VideoSearch是一个跨平台的视频搜索和播放工具</p>
+            <p>TwentyTwo是一个跨平台的视频搜索和播放工具</p>
             <p>
               软件交流 :
               <b @click="goto('https://pd.qq.com/g/pd74066781')">传送门</b>
@@ -29,7 +29,7 @@
           </div>
 
           <div class="app-copyright">
-            <p>© 2025 VideoSearch. 保留所有权利。</p>
+            <p>© 2025 TwentyTwo. 保留所有权利。</p>
           </div>
         </el-scrollbar>
       </div>

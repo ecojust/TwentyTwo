@@ -132,7 +132,7 @@ export default class Collection {
   static async pushCollection(id: string, data: ICollection) {
     const newdata = Object.assign(data, {
       time: new Date().toLocaleString(),
-      author: "VideoSearch",
+      author: "TwentyTwo",
     });
     await File._writeFile(
       `${COLLECTION_FOLDER_NAME}/${id}.json`,

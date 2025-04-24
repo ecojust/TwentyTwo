@@ -1,6 +1,6 @@
-# VideoSearch
+# TwentyTwo
 
-VideoSearch 是一款跨平台的视频搜索和管理工具。
+TwentyTwo 是一款跨平台的视频搜索和管理工具。
 软件相关的交流与探讨请点击传送门：[ Video Search](https://pd.qq.com/g/pd74066781)
 
 ## 功能特点
@@ -12,7 +12,7 @@ VideoSearch 是一款跨平台的视频搜索和管理工具。
 
 ## 插件开发
 
-VideoSearch 支持自定义插件开发，您可以通过创建符合插件接口的 JavaScript 文件来扩展视频源。详细文档请参考：[插件开发](https://pd.qq.com/g/pd74066781?subc=690166750) 。
+TwentyTwo 支持自定义插件开发，您可以通过创建符合插件接口的 JavaScript 文件来扩展视频源。详细文档请参考：[插件开发](https://pd.qq.com/g/pd74066781?subc=690166750) 。
 
 ## 免责声明
 

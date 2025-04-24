@@ -9,7 +9,7 @@
           alt="Logo"
           class="navbar-logo"
         />
-        <span v-else class="navbar-title">Video Search</span>
+        <span v-else class="navbar-title">TwentyTwo</span>
       </div>
       <div class="navbar-menu">
         <router-link to="/search" class="navbar-item" active-class="active">
