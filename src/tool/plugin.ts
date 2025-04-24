@@ -2,11 +2,40 @@ import { invoke } from "@tauri-apps/api/core";
 import * as cheerio from "cheerio";
 import File from "./file";
 import Config from "./config";
-import { PLUGIN_FOLDER_NAME, DRAFT_PLUGIN_FILE } from "../const/const";
+import {
+  PLUGIN_FOLDER_NAME,
+  DRAFT_PLUGIN_FILE,
+  PLUGIN_USAGE_FILE,
+} from "../const/const";
 import { IPlugin, IResult, IPlayer } from "../const/interface";
 
 export default class Plugin {
   static _currentPlugin: IPlugin;
+
+  static async addUsage() {
+    const file = await File._readFile(PLUGIN_USAGE_FILE, JSON.stringify({}));
+    if (!file?.success) {
+      return;
+    }
+    const usage = JSON.parse(file.data);
+    const target = usage[this._currentPlugin.id];
+    if (target && target.usage) {
+      target.usage++;
+    } else {
+      usage[this._currentPlugin.id] = {
+        usage: 1,
+      };
+    }
+    await File._writeFile(PLUGIN_USAGE_FILE, JSON.stringify(usage));
+  }
+
+  static async getUsage() {
+    const file = await File._readFile(PLUGIN_USAGE_FILE, JSON.stringify({}));
+    if (!file?.success) {
+      return {};
+    }
+    return JSON.parse(file.data);
+  }
 
   static async getDraftPlugin() {
     const res = (await File._readFile(DRAFT_PLUGIN_FILE)) as IResult;
@@ -41,6 +70,8 @@ export default class Plugin {
 
         if (file?.success) {
           const plugin = eval(file.data) as IPlugin;
+          console.log("entry.name", entry.name, plugin);
+
           plugins.push(
             Object.assign(plugin, { id: entry.name.replace(".js", "") })
           );
@@ -74,6 +105,7 @@ export default class Plugin {
   }
 
   static async _fetchIPC(url: string, type: string = "html") {
+    this.addUsage();
     return await invoke(type == "html" ? "fetch_url" : "fetch_request", {
       url: url,
     });

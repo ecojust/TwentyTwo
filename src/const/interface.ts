@@ -4,6 +4,7 @@ export interface IPlugin {
   description: string;
   version: string;
   author: string;
+  usage?: number;
   search: {
     url: string;
     description: string;

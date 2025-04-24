@@ -19,9 +19,18 @@ export const usePluginsStore = defineStore("plugins", () => {
   // 从本地存储加载插件
   const loadPlugins = async () => {
     const savedPlugins = await Plugin.getPlugins();
+    const usage = await Plugin.getUsage();
     if (savedPlugins) {
       try {
+        savedPlugins.forEach((plugin) => {
+          if (usage[plugin.id]) {
+            plugin.usage = usage[plugin.id].usage;
+          } else {
+            plugin.usage = 0;
+          }
+        });
         plugins.value = savedPlugins;
+        console.log("插件加载成功:", savedPlugins);
       } catch (e) {
         console.error("加载插件失败:", e);
       }

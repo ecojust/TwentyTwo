@@ -67,6 +67,10 @@
                     删除插件
                   </el-button>
                 </div>
+
+                <div class="count">
+                  {{ plugin.usage }}
+                </div>
               </el-card>
             </div>
           </el-scrollbar>
@@ -195,6 +199,7 @@ const plugins = computed(() => pluginsStore.plugins);
 const showSearch = ref(true);
 const showDetail = ref(true);
 const showPlay = ref(true);
+const usage = ref({});
 
 const handleOpenEditorDialog = () => {
   showDevDialog.value = true;
@@ -352,11 +357,13 @@ onBeforeUnmount(() => {
       display: inline-block;
       margin: 10px;
       cursor: pointer;
+      position: relative;
 
       .plugin-card {
         margin-bottom: 20px;
         height: 100%;
         transition: transform 0.3s;
+        transform: translateY(0px);
 
         &:hover {
           transform: translateY(-5px);
@@ -396,6 +403,22 @@ onBeforeUnmount(() => {
             font-size: 0.9rem;
             color: var(--el-text-color-secondary);
           }
+        }
+        .count {
+          position: absolute;
+          left: 0px;
+          top: 0px;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          backdrop-filter: blur(10px); /* 添加毛玻璃效果 */
+          -webkit-backdrop-filter: blur(10px); /* Safari 浏览器兼容 */
+          z-index: -1;
+          font-size: 3rem;
+          color: transparent;
+          -webkit-text-stroke: 1px var(--el-text-color-secondary);
         }
       }
     }
