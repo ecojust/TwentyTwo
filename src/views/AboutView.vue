@@ -22,7 +22,7 @@
 
             <p>
               Pull request & Issue :
-              <b @click="goto('https://github.com/ecojust/VideoSearch')"
+              <b @click="goto('https://github.com/ecojust/TwentyTwo')"
                 >传送门</b
               >
             </p>
