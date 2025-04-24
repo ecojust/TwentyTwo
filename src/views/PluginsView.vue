@@ -347,8 +347,10 @@ onBeforeUnmount(() => {
 
     .plugin-item {
       width: 300px;
+      height: 200px;
+      vertical-align: top;
       display: inline-block;
-      margin: 5px;
+      margin: 10px;
       cursor: pointer;
 
       .plugin-card {
@@ -432,45 +434,6 @@ onBeforeUnmount(() => {
         &.controls-hidden {
           opacity: 0;
           pointer-events: none;
-        }
-
-        .tv-style-title {
-          display: inline-block;
-          font-size: 18px;
-          font-weight: 500;
-          color: #ffffff;
-          background-color: rgba(0, 0, 0, 0.5);
-          padding: 6px 12px;
-          border-radius: 4px;
-          margin-right: 10px;
-          text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-          letter-spacing: 1px;
-          backdrop-filter: blur(2px);
-          border-left: 3px solid #409eff;
-        }
-
-        .player-header-close {
-          position: absolute;
-          top: 10px;
-          right: 20px;
-          font-size: 18px;
-          background-color: rgba(255, 255, 255, 0.6);
-          border: none;
-          color: #ffffff;
-          opacity: 1;
-
-          .el-icon {
-            transition: all 0.2s ease;
-          }
-
-          &:hover {
-            opacity: 1;
-            background-color: rgba(255, 255, 255, 0.5);
-
-            .el-icon {
-              transform: scale(1.1);
-            }
-          }
         }
       }
       .editor-container {

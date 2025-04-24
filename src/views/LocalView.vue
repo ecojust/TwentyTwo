@@ -16,7 +16,7 @@
           ></el-empty>
 
           <el-row v-else-if="history.length > 0" :gutter="20">
-            <el-scrollbar wrap-style="height:calc(100vh - 300px);width:100%;">
+            <el-scrollbar wrap-style="height:calc(100vh - 260px);width:100%;">
               <div
                 class="history-item"
                 v-for="(result, index) in history"
@@ -35,7 +35,7 @@
                     <el-image
                       :src="result.thumbnail || '/placeholder.jpg'"
                       :alt="result.title"
-                      fit="cover"
+                      fit="contain"
                     ></el-image>
                     <!-- 添加居中的播放图标 -->
                     <div
@@ -77,9 +77,9 @@
           ></el-empty>
 
           <el-row v-else :gutter="20">
-            <el-scrollbar wrap-style="height:calc(100vh - 300px);width:100%;">
+            <el-scrollbar wrap-style="height:calc(100vh - 260px);width:100%;">
               <div
-                class="history-item collection-item"
+                class="collection-item"
                 v-for="(coll, index) in collection"
                 :key="index"
                 :xs="24"
@@ -97,7 +97,7 @@
                     <el-image
                       :src="coll.coverUrl || '/placeholder.jpg'"
                       :alt="coll.title"
-                      fit="cover"
+                      fit="contain"
                     ></el-image>
                     <!-- 添加居中的播放图标 -->
                   </div>
@@ -118,7 +118,13 @@
                   </div>
                 </el-card>
               </div>
-              <div class="history-item-add" :xs="24" :sm="12" :md="8" :lg="6">
+              <div
+                class="collection-item-add"
+                :xs="24"
+                :sm="12"
+                :md="8"
+                :lg="6"
+              >
                 <el-card
                   class="video-card add-collection-card"
                   :body-style="{ padding: '0px' }"
@@ -257,7 +263,7 @@
                 <el-image
                   class="collection-thumbnail"
                   :src="coll.coverUrl || '/placeholder.jpg'"
-                  fit="cover"
+                  fit="contain"
                 ></el-image>
                 <span class="collection-title">{{ coll.title }}</span>
               </div>
@@ -320,7 +326,7 @@
         wrap-style="height:calc(100vh - 500px);width:calc(100% - 0px);"
       >
         <div
-          class="history-item"
+          class="video-item"
           v-for="(video, index) in currentCollection.videos"
           :key="index"
           :xs="24"
@@ -337,7 +343,7 @@
               <el-image
                 :src="video.thumbnail || '/placeholder.jpg'"
                 :alt="video.title"
-                fit="cover"
+                fit="contain"
               ></el-image>
               <div
                 class="play-icon-overlay"
@@ -691,156 +697,171 @@ onMounted(async () => {
 });
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .local-view {
-  width: 100%;
-
   .view-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    h2 {
+      margin: 0;
+    }
   }
 
-  .history-item {
-    width: 260px;
-    display: inline-block;
+  .history-item,
+  .collection-item,
+  .video-item {
     margin: 10px;
+    display: inline-block;
+    width: 260px;
+  }
+  .collection-item {
+    .video-info {
+      .video-path {
+        display: block;
+        margin: 5px 0;
+        color: #666;
+        font-size: 12px;
+
+        .author {
+          float: right;
+          color: #f35804;
+        }
+      }
+    }
   }
 
   .video-card {
-    margin-bottom: 20px;
-    transition: transform 0.3s;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
+    height: 100%;
+    transition: all 0.3s;
 
     &:hover {
       transform: translateY(-5px);
     }
+
+    .video-thumbnail {
+      position: relative;
+      height: 200px;
+      overflow: hidden;
+
+      .el-image {
+        width: 100%;
+        height: 100%;
+      }
+
+      .play-icon-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+        cursor: pointer;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        .play-icon {
+          font-size: 48px;
+          color: white;
+        }
+      }
+    }
+
+    .video-info {
+      padding: 14px;
+      position: relative;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        margin-bottom: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      span {
+        font-size: 14px;
+        color: #666;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+
+      .video-actions {
+        margin-top: 10px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .time {
+        position: absolute;
+        bottom: 14px;
+        left: 14px;
+        font-size: 12px;
+        color: #999;
+      }
+
+      .copy-collection {
+        margin-top: 10px;
+        width: 100%;
+      }
+    }
   }
 
-  .video-thumbnail {
-    height: 180px;
-    overflow: hidden;
-    position: relative;
+  .collection-item-add {
+    display: inline-block;
+    width: 240px;
+    margin: 20px;
+    vertical-align: top;
 
-    .play-icon-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: rgba(0, 0, 0, 0.3);
-      opacity: 0;
-      transition: opacity 0.3s;
+    .add-collection-card {
       cursor: pointer;
 
-      &:hover {
-        opacity: 1;
+      .add-collection-thumbnail {
+        height: 200px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f5f7fa;
+
+        .add-icon {
+          font-size: 48px;
+          color: #909399;
+        }
       }
-
-      .play-icon {
-        font-size: 48px;
-        color: #fff;
-        filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
-      }
     }
-  }
-
-  .history-item-add {
-    width: 260px;
-    display: inline-block;
-    margin: 10px;
-    vertical-align: top;
-    .video-thumbnail {
-      height: 270px;
-    }
-  }
-
-  .video-info {
-    padding: 14px;
-
-    h3 {
-      margin: 0 0 10px;
-      font-size: 16px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-    .copy-collection {
-      // float: right;
-      position: absolute;
-      right: 10px;
-      opacity: 0;
-      transition: all 0.3s;
-    }
-  }
-
-  .collection-item:hover {
-    .copy-collection {
-      opacity: 1;
-    }
-  }
-
-  .video-actions {
-    display: flex;
-    justify-content: flex-start;
-    margin-top: 15px;
-  }
-
-  .time {
-    width: 100%;
-    font-size: 0.8rem;
-    color: var(--el-text-color-secondary);
-    text-align: right;
-    margin-top: 8px;
-    padding: 0;
-  }
-
-  .video-path {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    max-width: 300px;
-    .author {
-      color: rgb(255, 102, 0);
-      font-weight: bold;
-      margin-left: 5px;
-    }
-  }
-
-  .add-collection-thumbnail {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--el-color-info-light-9);
-
-    .add-icon {
-      font-size: 48px;
-      color: var(--el-color-primary);
-    }
-  }
-
-  .add-collection-card {
-    cursor: pointer;
   }
 
   .cover-uploader {
-    width: 178px;
-    height: 178px;
-    border: 1px dashed var(--el-border-color);
-    border-radius: 6px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: var(--el-transition-duration-fast);
+    .cover-preview-container {
+      position: relative;
+      width: 178px;
+      height: 178px;
+      border: 1px dashed #d9d9d9;
+      border-radius: 6px;
+      overflow: hidden;
 
-    &:hover {
-      border-color: var(--el-color-primary);
+      .cover-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .cover-delete-icon {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        color: white;
+      }
     }
 
     .cover-uploader-icon {
@@ -849,122 +870,79 @@ onMounted(async () => {
       width: 178px;
       height: 178px;
       text-align: center;
+      border: 1px dashed #d9d9d9;
+      border-radius: 6px;
+      cursor: pointer;
       display: flex;
       justify-content: center;
       align-items: center;
     }
+  }
 
-    .cover-preview-container {
-      position: relative;
-      width: 178px;
-      height: 178px;
+  .cover-tip {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 5px;
+  }
 
-      .cover-preview {
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: cover;
-      }
+  .collection-select-list {
+    .collection-select-item {
+      display: block;
+      margin-bottom: 10px;
+      height: auto;
 
-      .cover-delete-icon {
-        position: absolute;
-        top: 0;
-        right: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        color: #fff;
-        width: 24px;
-        height: 24px;
+      .collection-select-content {
         display: flex;
-        justify-content: center;
         align-items: center;
-        cursor: pointer;
 
-        &:hover {
-          background-color: rgba(220, 53, 69, 0.8);
+        .collection-thumbnail {
+          width: 60px;
+          height: 60px;
+          margin-right: 10px;
+          border-radius: 4px;
+        }
+
+        .collection-title {
+          flex: 1;
         }
       }
     }
   }
+}
 
-  .cover-tip {
-    width: 100%;
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-    margin-top: 8px;
+.collection-videos-dialog {
+  .title {
+    // display: flex;
+    // align-items: center;
+    margin-bottom: 20px;
+
+    .el-input {
+      // flex: 1;
+      margin: 0px 10px;
+      width: 240px;
+
+      &.editing {
+        .el-input__inner {
+          border-color: var(--el-color-primary);
+        }
+      }
+    }
+    .delete-button {
+      float: right;
+    }
+  }
+}
+
+.player-dialog {
+  :deep(.el-dialog__body) {
+    padding: 0;
   }
 }
 
 .select-collection-dialog {
-  .collection-select-list {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-  .collection-select-content {
-    width: 80px;
-  }
-}
-.collection-videos-dialog {
-  header {
-    display: none;
-  }
-  .el-dialog__body {
-    padding: 0px !important;
-    overflow: hidden;
-  }
-
-  .title {
-    // padding: 10px 20px;
-    margin-left: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: relative;
-    // border-bottom: 1px solid var(--el-border-color-lighter);
-
-    .el-input {
-      width: 200px;
-
-      .el-input__wrapper {
-        box-shadow: none;
-        background: none;
-        padding: 0;
-
-        .el-input__inner {
-          font-size: 16px;
-          height: 32px;
-          padding: 0 8px;
-        }
-
-        &:hover {
-          box-shadow: 0 0 0 1px var(--el-border-color) inset;
-        }
-      }
-
-      &.editing .el-input__wrapper {
-        box-shadow: 0 0 0 1px var(--el-border-color) inset;
-      }
-    }
-
-    .confirm-button {
-      opacity: 0;
-      transition: opacity 0.3s;
-      transform: scale(0.8);
-    }
-
-    .delete-button {
-      position: absolute;
-      right: 10px;
-      // opacity: 0.7;
-      &:hover {
-        opacity: 1;
-      }
-    }
-
-    &:hover .confirm-button {
-      opacity: 1;
-    }
+  :deep(.el-radio__input) {
+    align-self: flex-start;
+    margin-top: 20px;
   }
 }
 </style>

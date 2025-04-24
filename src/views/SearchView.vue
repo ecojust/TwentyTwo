@@ -294,7 +294,6 @@ onMounted(async () => {
 // 播放器对话框样式
 .player-dialog {
   position: relative;
-
   .el-dialog__header {
     position: absolute;
     top: 0;
@@ -302,50 +301,10 @@ onMounted(async () => {
     width: calc(100% - 40px);
     z-index: 90;
     padding: 15px 20px !important;
-
-    .tv-style-title {
-      display: inline-block;
-      font-size: 18px;
-      font-weight: 500;
-      color: #ffffff;
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 6px 12px;
-      border-radius: 4px;
-      margin-right: 10px;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-      letter-spacing: 1px;
-      backdrop-filter: blur(2px);
-      border-left: 3px solid #409eff;
-    }
-
-    .player-header-close {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 18px;
-      background-color: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: #ffffff;
-      opacity: 0.7;
-
-      .el-icon {
-        transition: all 0.2s ease;
-      }
-
-      &:hover {
-        opacity: 1;
-        background-color: rgba(255, 255, 255, 0.3);
-
-        .el-icon {
-          transform: scale(1.1);
-        }
-      }
-    }
   }
 
   .el-dialog__body {
     height: 100%;
-
     .player-container {
       height: 100%;
     }
