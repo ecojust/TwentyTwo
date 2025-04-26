@@ -11,8 +11,18 @@
 
       <span class="label">视频剩余时间(s):{{ leftEndingTime.toFixed(2) }}</span>
 
-      <span class="label">片尾跳过时间(s):</span>
+      <span class="label">片头片尾跳过时间(s):</span>
 
+      <el-input-number
+        class="skip-ending-setting"
+        v-model="skipStartTime"
+        :min="0"
+        :max="300"
+        :step="10"
+        size="small"
+        controls-position="right"
+        placeholder="设置片尾跳过时间(秒)"
+      />
       <el-input-number
         class="skip-ending-setting"
         v-model="skipEndingTime"
@@ -199,6 +209,15 @@ const countDown = ref(3);
 let autoPlayTimer = null;
 let countDownTimer = null;
 
+// 添加片头跳过时间设置
+const skipStartTime = ref(100);
+
+// 视频加载完成时的处理
+const videoLoaded = () => {
+  if (!videoRef.value || !skipStartTime.value) return;
+  // 设置视频播放位置到跳过片头的时间点
+  videoRef.value.currentTime = skipStartTime.value;
+};
 // 处理视频播放结束事件
 const handleVideoEnded = async () => {
   // 找到当前视频在列表中的索引
