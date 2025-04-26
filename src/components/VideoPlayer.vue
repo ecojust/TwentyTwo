@@ -32,7 +32,6 @@
         size="small"
         controls-position="right"
         placeholder="设置片尾跳过时间(秒)"
-        @change="handleSkipEndingTimeChange"
       />
       <el-button
         class="player-header-close"
@@ -163,22 +162,6 @@ const videoRef = ref(null);
 const controlsHidden = ref(false);
 let hideControlsTimer = null;
 
-// 处理鼠标移动事件
-const handleMouseMove = () => {
-  // 显示控制栏
-  controlsHidden.value = false;
-  // 清除之前的定时器
-  if (hideControlsTimer) {
-    clearTimeout(hideControlsTimer);
-  }
-  if (computedVideoType.value == "iframe") return;
-
-  // 设置新的定时器，3秒后隐藏控制栏
-  hideControlsTimer = setTimeout(() => {
-    controlsHidden.value = true;
-  }, 3000);
-};
-
 // 处理关闭按钮点击事件
 const handleClose = () => {
   if (videoRef.value) {
@@ -220,7 +203,6 @@ const switchVideo = async (video) => {
 
 const showNextEpisodeHint = ref(false);
 const countDown = ref(3);
-let autoPlayTimer = null;
 let countDownTimer = null;
 
 // 添加片头跳过时间设置
@@ -231,43 +213,6 @@ const videoLoaded = () => {
   if (!videoRef.value || !skipStartTime.value) return;
   // 设置视频播放位置到跳过片头的时间点
   videoRef.value.currentTime = skipStartTime.value;
-};
-// 处理视频播放结束事件
-const handleVideoEnded = async () => {
-  // 找到当前视频在列表中的索引
-  const currentIndex = videoSources.value.findIndex(
-    (source) => source.real === currentVideo.value.real
-  );
-
-  // 如果存在下一集
-  if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
-    // 显示提示并开始倒计时
-    showNextEpisodeHint.value = true;
-    countDown.value = 5;
-
-    // 开始倒计时
-    countDownTimer = setInterval(() => {
-      countDown.value--;
-    }, 1000);
-
-    // 3秒后自动播放
-    autoPlayTimer = setTimeout(() => {
-      playNextEpisode();
-    }, 5000);
-  }
-};
-
-// 立即播放下一集
-const playNextEpisode = async () => {
-  const currentIndex = videoSources.value.findIndex(
-    (source) => source.real === currentVideo.value.real
-  );
-
-  if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
-    clearTimers();
-    showNextEpisodeHint.value = false;
-    await switchVideo(videoSources.value[currentIndex + 1]);
-  }
 };
 
 // 取消自动播放
@@ -281,40 +226,72 @@ const leftEndingTime = ref(180);
 
 let skipEndingTimer = null;
 
-// 处理片尾时间设置变更
-const handleSkipEndingTimeChange = (value) => {
-  if (skipEndingTimer) {
-    clearTimeout(skipEndingTimer);
-    skipEndingTimer = null;
-  }
-};
-
 // 更新视频进度时检查是否需要跳过片尾
 const updateProgress = () => {
   if (!videoRef.value || !skipEndingTime.value) return;
-
   leftEndingTime.value = videoRef.value.duration - videoRef.value.currentTime;
-
   if (leftEndingTime.value <= skipEndingTime.value && !skipEndingTimer) {
     skipEndingTimer = setTimeout(() => {
       handleVideoEnded();
+      clearTimeout(skipEndingTimer);
+      skipEndingTimer = null;
     }, 100);
   }
 };
+
+// 处理视频播放结束事件
+const handleVideoEnded = async () => {
+  const currentIndex = videoSources.value.findIndex(
+    (source) => source.real === currentVideo.value.real
+  );
+  if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
+    showNextEpisodeHint.value = true;
+    countDown.value = 3;
+    if (countDownTimer) {
+      clearInterval(countDownTimer);
+      countDownTimer = null;
+    }
+    countDownTimer = setInterval(() => {
+      countDown.value--;
+      if (countDown.value <= 0) {
+        clearInterval(countDownTimer);
+        playNextEpisode();
+      }
+    }, 1000);
+  }
+};
+
+// 立即播放下一集
+const playNextEpisode = async () => {
+  const currentIndex = videoSources.value.findIndex(
+    (source) => source.real === currentVideo.value.real
+  );
+  showNextEpisodeHint.value = false;
+
+  if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
+    await switchVideo(videoSources.value[currentIndex + 1]);
+  }
+};
+
+// 处理鼠标移动事件
+const handleMouseMove = () => {
+  controlsHidden.value = false;
+  if (hideControlsTimer) {
+    clearTimeout(hideControlsTimer);
+  }
+  if (computedVideoType.value == "iframe") return;
+  hideControlsTimer = setTimeout(() => {
+    controlsHidden.value = true;
+  }, 3000);
+};
+
 // 清除定时器
 const clearTimers = () => {
   if (hideControlsTimer) {
     clearTimeout(hideControlsTimer);
     hideControlsTimer = null;
   }
-  if (autoPlayTimer) {
-    clearTimeout(autoPlayTimer);
-    autoPlayTimer = null;
-  }
-  if (countDownTimer) {
-    clearInterval(countDownTimer);
-    countDownTimer = null;
-  }
+
   if (skipEndingTimer) {
     clearTimeout(skipEndingTimer);
     skipEndingTimer = null;
