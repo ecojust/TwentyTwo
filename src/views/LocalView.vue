@@ -114,6 +114,13 @@
                       @click.stop="exportCollection(coll)"
                       >拷贝合集</el-button
                     >
+                    <span></span>
+                    <el-button
+                      type="warning"
+                      class="copy-collection"
+                      @click.stop="deleteCollection(coll)"
+                      >删除合集</el-button
+                    >
                     <div class="video-actions"></div>
                   </div>
                 </el-card>
@@ -306,13 +313,6 @@
           :icon="Check"
           circle
           @click="updateCollectionTitle"
-        />
-        <el-button
-          class="delete-button"
-          type="danger"
-          :icon="Delete"
-          circle
-          @click="deleteCollection"
         />
       </div>
       <el-empty
@@ -541,21 +541,15 @@ function addCollection() {
   };
 }
 
-const deleteCollection = async () => {
+const deleteCollection = async (coll) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除合集 "${currentCollection.value.title}" 吗？`,
-      "警告",
-      {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning",
-      }
-    )
+    await ElMessageBox.confirm(`确定要删除合集 "${coll.title}" 吗？`, "警告", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+    })
       .then(async () => {
-        const res = await Collection.deleteCollection(
-          currentCollection.value.id
-        );
+        const res = await Collection.deleteCollection(coll.id);
         if (!res.success) {
           ElMessage.warning(res.message);
         } else {
