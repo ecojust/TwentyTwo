@@ -322,6 +322,7 @@ const clearTimers = () => {
 };
 // Clean up when component is unmounted
 onMounted(async () => {
+  clearTimers();
   handleMouseMove();
   videoSources.value = [...(props.video.video_urls || [])];
   if (videoSources.value[0]) {
