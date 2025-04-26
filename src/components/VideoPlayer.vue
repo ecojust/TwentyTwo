@@ -58,7 +58,6 @@
       class="video-element"
       @timeupdate="updateProgress"
       @loadedmetadata="videoLoaded"
-      @ended="handleVideoEnded"
     >
       <source :src="currentVideo.real" :type="computedVideoType" />
       您的浏览器不支持 HTML5 视频播放。
@@ -187,17 +186,14 @@ const switchVideo = async (video) => {
     currentVideo.value = video;
   }
   console.log("切换视频成功");
-  Player.waitForElement(
-    `#${props.id}`,
-    () => {
-      console.log("开始自动播放");
-      videoRef.value.load();
-      videoRef.value.play().catch((err) => {
-        console.error("播放失败:", err);
-      });
-    },
-    10000
-  );
+  const bool = await Player.waitForElement(`#${props.id}`, 10000);
+  if (bool) {
+    console.log("开始自动播放");
+    videoRef.value.load();
+    videoRef.value.play().catch((err) => {
+      console.error("播放失败:", err);
+    });
+  }
 };
 
 const showNextEpisodeHint = ref(false);
@@ -219,6 +215,7 @@ const skipEndingTime = ref(180);
 const leftEndingTime = ref(180);
 
 let skipEndingTimer = null;
+const startEndingProcess = ref(false);
 
 // 更新视频进度时检查是否需要跳过片尾
 const updateProgress = () => {
@@ -228,26 +225,26 @@ const updateProgress = () => {
   if (
     leftEndingTime.value <= skipEndingTime.value &&
     !skipEndingTimer &&
-    !showNextEpisodeHint.value
+    !startEndingProcess.value
   ) {
     skipEndingTimer = setTimeout(() => {
       handleVideoEnded();
       clearTimeout(skipEndingTimer);
       skipEndingTimer = null;
-    }, 100);
+    }, 1000);
   }
 };
 
 // 处理视频播放结束事件
 const handleVideoEnded = async () => {
-  // 直接使用 showNextEpisodeHint 来检查状态
-  if (showNextEpisodeHint.value) return;
+  if (startEndingProcess.value) return;
 
   const currentIndex = videoSources.value.findIndex(
     (source) => source.real === currentVideo.value.real
   );
   if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
     showNextEpisodeHint.value = true;
+    startEndingProcess.value = true;
     countDown.value = 5;
     if (countDownTimer) {
       clearInterval(countDownTimer);
@@ -265,14 +262,18 @@ const handleVideoEnded = async () => {
 
 // 立即播放下一集
 const playNextEpisode = async () => {
+  if (countDownTimer) {
+    clearInterval(countDownTimer);
+    countDownTimer = null;
+  }
   const currentIndex = videoSources.value.findIndex(
     (source) => source.real === currentVideo.value.real
   );
   showNextEpisodeHint.value = false;
-
   if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
     await switchVideo(videoSources.value[currentIndex + 1]);
   }
+  startEndingProcess.value = false;
 };
 
 // 处理鼠标移动事件

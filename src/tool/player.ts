@@ -14,20 +14,22 @@ export default class Player {
     return iframe;
   }
 
-  static waitForElement(
+  static async waitForElement(
     selector: string,
-    callback: () => void,
     timeout: number = 10000
-  ) {
+  ): Promise<boolean> {
     const startTime = Date.now();
-    const interval = setInterval(() => {
-      const element = document.querySelector(selector);
-      if (element) {
-        clearInterval(interval);
-        callback();
-      } else if (Date.now() - startTime > timeout) {
-        clearInterval(interval);
-      }
+    return new Promise<boolean>((resolve, reject) => {
+      const interval = setInterval(() => {
+        const element = document.querySelector(selector);
+        if (element) {
+          clearInterval(interval);
+          resolve(true);
+        } else if (Date.now() - startTime > timeout) {
+          clearInterval(interval);
+          reject(false);
+        }
+      });
     });
   }
 }
