@@ -56,7 +56,7 @@
                 <el-image
                   :src="result.thumbnail || '/placeholder.jpg'"
                   :alt="result.title"
-                  fit="cover"
+                  fit="contain"
                 ></el-image>
                 <!-- 添加居中的播放图标 -->
                 <div class="play-icon-overlay" @click="playVideo(result)">
@@ -98,7 +98,6 @@
       v-model="showPlayer"
       height="400px"
       fullscreen
-      :title="playerTitle"
       :show-close="false"
     >
       <VideoPlayer
@@ -176,10 +175,16 @@ async function playVideo(video) {
   }
   // 添加到历史记录
   await History.pushHistory(video);
-  status.value = "等待操作...";
-  currentVideo.value = video;
-  showPlayer.value = true;
+  status.value = "视频源解析成功...";
+  // currentVideo.value = video;
+  // showPlayer.value = true;
   await nextTick();
+  router.push({
+    path: "/local",
+    query: {
+      autoPlay: true,
+    },
+  });
 }
 
 const pluginActive = async () => {
@@ -237,7 +242,9 @@ onMounted(async () => {
       height: 180px;
       overflow: hidden;
       position: relative;
-
+      .el-image {
+        height: 100%;
+      }
       .play-icon-overlay {
         position: absolute;
         top: 0;

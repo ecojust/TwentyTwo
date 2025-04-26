@@ -13,4 +13,21 @@ export default class Player {
     iframe.style.bottom = "0";
     return iframe;
   }
+
+  static waitForElement(
+    selector: string,
+    callback: () => void,
+    timeout: number = 10000
+  ) {
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const element = document.querySelector(selector);
+      if (element) {
+        clearInterval(interval);
+        callback();
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(interval);
+      }
+    });
+  }
 }

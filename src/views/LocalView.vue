@@ -386,6 +386,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onActivated } from "vue";
+import { useRouter } from "vue-router";
 import { VideoPlay, Delete, Plus, Check } from "@element-plus/icons-vue"; // 添加 Delete 图标
 import { ElMessageBox, ElMessage } from "element-plus";
 import History from "../tool/history";
@@ -395,6 +396,7 @@ import Plugin from "../tool/plugin";
 import VideoPlayer from "../components/VideoPlayer.vue";
 import { DEFAULT_COLLECTION_COVER } from "../const/const";
 
+const router = useRouter();
 const activeTab = ref("history");
 const showPlayer = ref(false);
 const currentVideo = ref({});
@@ -684,6 +686,12 @@ const init = async () => {
   collection.value = await Collection.getCollections();
   console.log("history", history.value);
   console.log("collection", collection.value);
+  const autoPlay = router.currentRoute.value.query.autoPlay;
+  if (autoPlay) {
+    activeTab.value = "history";
+    playVideo(history.value[0], "history");
+    router.replace({ query: {} });
+  }
 };
 
 onActivated(async () => {

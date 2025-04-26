@@ -53,6 +53,7 @@
     <video
       v-else-if="computedVideoType.includes('/')"
       ref="videoRef"
+      :id="id"
       controls
       autoplay
       class="video-element"
@@ -99,6 +100,8 @@
 import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
 import { Close, Check } from "@element-plus/icons-vue";
 import Plugin from "../tool/plugin";
+import Player from "../tool/player";
+
 // import { IVideo } from "../const/interface";
 
 const emit = defineEmits(["on-close", "on-update"]);
@@ -110,6 +113,11 @@ const props = defineProps({
       origin: "",
       real: "-1",
     },
+  },
+  id: {
+    type: String,
+    required: false,
+    default: "video-player",
   },
 });
 
@@ -196,12 +204,18 @@ const switchVideo = async (video) => {
   } else {
     currentVideo.value = video;
   }
-  if (videoRef.value) {
-    videoRef.value.load();
-    videoRef.value.play().catch((err) => {
-      console.error("播放失败:", err);
-    });
-  }
+  console.log("切换视频成功");
+  Player.waitForElement(
+    `#${props.id}`,
+    () => {
+      console.log("开始自动播放");
+      videoRef.value.load();
+      videoRef.value.play().catch((err) => {
+        console.error("播放失败:", err);
+      });
+    },
+    10000
+  );
 };
 
 const showNextEpisodeHint = ref(false);
@@ -229,7 +243,7 @@ const handleVideoEnded = async () => {
   if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
     // 显示提示并开始倒计时
     showNextEpisodeHint.value = true;
-    countDown.value = 3;
+    countDown.value = 5;
 
     // 开始倒计时
     countDownTimer = setInterval(() => {
@@ -239,7 +253,7 @@ const handleVideoEnded = async () => {
     // 3秒后自动播放
     autoPlayTimer = setTimeout(() => {
       playNextEpisode();
-    }, 3000);
+    }, 5000);
   }
 };
 
