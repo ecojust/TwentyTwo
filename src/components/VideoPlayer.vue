@@ -88,7 +88,6 @@
           <el-button type="primary" size="small" @click="playNextEpisode"
             >立即播放</el-button
           >
-          <el-button size="small" @click="cancelAutoPlay">取消</el-button>
         </div>
       </div>
     </div>
@@ -215,11 +214,6 @@ const videoLoaded = () => {
   videoRef.value.currentTime = skipStartTime.value;
 };
 
-// 取消自动播放
-const cancelAutoPlay = () => {
-  clearTimers();
-};
-
 // 添加片尾跳过时间设置
 const skipEndingTime = ref(180);
 const leftEndingTime = ref(180);
@@ -230,7 +224,12 @@ let skipEndingTimer = null;
 const updateProgress = () => {
   if (!videoRef.value || !skipEndingTime.value) return;
   leftEndingTime.value = videoRef.value.duration - videoRef.value.currentTime;
-  if (leftEndingTime.value <= skipEndingTime.value && !skipEndingTimer) {
+  // 直接使用 showNextEpisodeHint 来检查状态
+  if (
+    leftEndingTime.value <= skipEndingTime.value &&
+    !skipEndingTimer &&
+    !showNextEpisodeHint.value
+  ) {
     skipEndingTimer = setTimeout(() => {
       handleVideoEnded();
       clearTimeout(skipEndingTimer);
@@ -241,12 +240,15 @@ const updateProgress = () => {
 
 // 处理视频播放结束事件
 const handleVideoEnded = async () => {
+  // 直接使用 showNextEpisodeHint 来检查状态
+  if (showNextEpisodeHint.value) return;
+
   const currentIndex = videoSources.value.findIndex(
     (source) => source.real === currentVideo.value.real
   );
   if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
     showNextEpisodeHint.value = true;
-    countDown.value = 3;
+    countDown.value = 5;
     if (countDownTimer) {
       clearInterval(countDownTimer);
       countDownTimer = null;
@@ -295,6 +297,11 @@ const clearTimers = () => {
   if (skipEndingTimer) {
     clearTimeout(skipEndingTimer);
     skipEndingTimer = null;
+  }
+
+  if (countDownTimer) {
+    clearInterval(countDownTimer);
+    countDownTimer = null;
   }
 };
 // Clean up when component is unmounted
