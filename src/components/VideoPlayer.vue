@@ -7,7 +7,23 @@
     <div class="player-header" :class="{ 'controls-hidden': controlsHidden }">
       <div class="tv-style-title">{{ videoTitle }}</div>
 
-      <span>{{ currentVideo.real }}</span>
+      <span class="label">{{ currentVideo.real }}</span>
+
+      <span class="label">视频剩余时间(s):{{ leftEndingTime.toFixed(2) }}</span>
+
+      <span class="label">片尾跳过时间(s):</span>
+
+      <el-input-number
+        class="skip-ending-setting"
+        v-model="skipEndingTime"
+        :min="0"
+        :max="300"
+        :step="10"
+        size="small"
+        controls-position="right"
+        placeholder="设置片尾跳过时间(秒)"
+        @change="handleSkipEndingTimeChange"
+      />
       <el-button
         class="player-header-close"
         type="primary"
@@ -32,6 +48,7 @@
       class="video-element"
       @timeupdate="updateProgress"
       @loadedmetadata="videoLoaded"
+      @ended="handleVideoEnded"
     >
       <source :src="currentVideo.real" :type="computedVideoType" />
       您的浏览器不支持 HTML5 视频播放。
@@ -50,6 +67,18 @@
         >
           <span>第 {{ index + 1 }} 集</span>
           <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
+        </div>
+      </div>
+    </div>
+    <!-- 添加自动播放提示 -->
+    <div v-if="showNextEpisodeHint" class="next-episode-hint">
+      <div class="hint-content">
+        <div class="tips">{{ countDown }}秒后自动播放下一集</div>
+        <div class="hint-buttons">
+          <el-button type="primary" size="small" @click="playNextEpisode"
+            >立即播放</el-button
+          >
+          <el-button size="small" @click="cancelAutoPlay">取消</el-button>
         </div>
       </div>
     </div>
@@ -165,6 +194,99 @@ const switchVideo = async (video) => {
   }
 };
 
+const showNextEpisodeHint = ref(false);
+const countDown = ref(3);
+let autoPlayTimer = null;
+let countDownTimer = null;
+
+// 处理视频播放结束事件
+const handleVideoEnded = async () => {
+  // 找到当前视频在列表中的索引
+  const currentIndex = videoSources.value.findIndex(
+    (source) => source.real === currentVideo.value.real
+  );
+
+  // 如果存在下一集
+  if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
+    // 显示提示并开始倒计时
+    showNextEpisodeHint.value = true;
+    countDown.value = 3;
+
+    // 开始倒计时
+    countDownTimer = setInterval(() => {
+      countDown.value--;
+    }, 1000);
+
+    // 3秒后自动播放
+    autoPlayTimer = setTimeout(() => {
+      playNextEpisode();
+    }, 3000);
+  }
+};
+
+// 立即播放下一集
+const playNextEpisode = async () => {
+  const currentIndex = videoSources.value.findIndex(
+    (source) => source.real === currentVideo.value.real
+  );
+
+  if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
+    clearTimers();
+    showNextEpisodeHint.value = false;
+    await switchVideo(videoSources.value[currentIndex + 1]);
+  }
+};
+
+// 取消自动播放
+const cancelAutoPlay = () => {
+  clearTimers();
+};
+
+// 添加片尾跳过时间设置
+const skipEndingTime = ref(180);
+const leftEndingTime = ref(180);
+
+let skipEndingTimer = null;
+
+// 处理片尾时间设置变更
+const handleSkipEndingTimeChange = (value) => {
+  if (skipEndingTimer) {
+    clearTimeout(skipEndingTimer);
+    skipEndingTimer = null;
+  }
+};
+
+// 更新视频进度时检查是否需要跳过片尾
+const updateProgress = () => {
+  if (!videoRef.value || !skipEndingTime.value) return;
+
+  leftEndingTime.value = videoRef.value.duration - videoRef.value.currentTime;
+
+  if (leftEndingTime.value <= skipEndingTime.value && !skipEndingTimer) {
+    skipEndingTimer = setTimeout(() => {
+      handleVideoEnded();
+    }, 100);
+  }
+};
+// 清除定时器
+const clearTimers = () => {
+  if (hideControlsTimer) {
+    clearTimeout(hideControlsTimer);
+    hideControlsTimer = null;
+  }
+  if (autoPlayTimer) {
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer = null;
+  }
+  if (countDownTimer) {
+    clearInterval(countDownTimer);
+    countDownTimer = null;
+  }
+  if (skipEndingTimer) {
+    clearTimeout(skipEndingTimer);
+    skipEndingTimer = null;
+  }
+};
 // Clean up when component is unmounted
 onMounted(async () => {
   handleMouseMove();
@@ -176,9 +298,7 @@ onMounted(async () => {
 
 // 组件卸载时清除定时器
 onUnmounted(() => {
-  if (hideControlsTimer) {
-    clearTimeout(hideControlsTimer);
-  }
+  clearTimers();
 });
 </script>
 
@@ -224,7 +344,49 @@ onUnmounted(() => {
       backdrop-filter: blur(2px);
       border-left: 3px solid #409eff;
     }
+    .label {
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .skip-ending-setting {
+      pointer-events: all;
+      width: 70px;
+      cursor: pointer;
+      .el-input-number__decrease,
+      .el-input-number__increase {
+        opacity: 0;
+      }
+      .el-input {
+        background: transparent;
+        .el-input__wrapper {
+          background: transparent;
+          box-shadow: none;
+          .el-input__inner {
+            // background: transparent;
+          }
+        }
+      }
+    }
 
+    .skip-ending-setting:hover {
+      pointer-events: all;
+      .el-input-number__decrease,
+      .el-input-number__increase {
+        opacity: 1;
+      }
+      .el-input {
+        // background: #fff;
+        .el-input__wrapper {
+          background: #fff;
+          box-shadow: 0 0 0 1px
+            var(--el-input-border-color, var(--el-border-color)) inset;
+
+          .el-input__inner {
+            // background: transparent;
+          }
+        }
+      }
+    }
     .player-header-close {
       position: absolute;
       top: 20px;
@@ -325,6 +487,31 @@ onUnmounted(() => {
       &.active {
         background: rgba(64, 158, 255, 0.2);
         color: #409eff;
+      }
+    }
+  }
+
+  .next-episode-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    z-index: 100;
+
+    .hint-content {
+      text-align: center;
+      color: #fff;
+      .tips {
+        margin-bottom: 15px;
+        font-size: 16px;
+      }
+      .hint-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
       }
     }
   }
