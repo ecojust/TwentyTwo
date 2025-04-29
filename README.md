@@ -17,10 +17,10 @@ TwentyTwo 是一款基于 Tauri,Vue3,Typescript 的跨平台视频搜索、播�
 
 ## 🖼️ 项目预览
 
-![搜索](./preview/search.png)
-![历史](./preview/history.png)width=100px
-![合集](./preview/collection.png)
-![播放](./preview/movie.png)
+<img src="./preview/search.png" width="300" alt="搜索" />
+<img src="./preview/history.png" width="300" alt="历史" />
+<img src="./preview/collection.png" width="300" alt="合集" />
+<img src="./preview/movie.png" width="300" alt="播放" />
 
 ## ✨ 功能列表
 

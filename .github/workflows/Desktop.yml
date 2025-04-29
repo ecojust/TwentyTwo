@@ -23,12 +23,12 @@ jobs:
         include:
           - platform: "windows-latest"
             args: ""
-          - platform: "macos-latest" # for Arm based macs (M1 and above).
-            args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based macs.
-            args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-22.04"
-            args: ""
+          # - platform: "macos-latest" # for Arm based macs (M1 and above).
+          #   args: "--target aarch64-apple-darwin"
+          # - platform: "macos-latest" # for Intel based macs.
+          #   args: "--target x86_64-apple-darwin"
+          # - platform: "ubuntu-22.04"
+          #   args: ""
 
     runs-on: ${{ matrix.platform }}
 
@@ -97,7 +97,11 @@ jobs:
           node -e "
             const fs = require('fs');
             const config = JSON.parse(fs.readFileSync('$CONFIG_FILE', 'utf8'));
-            config.version += '${{ steps.date_run.outputs.bundle_version }}';
+            if ('${{ matrix.platform }}' === 'windows-latest') {
+              config.version += '${{ steps.date_run.outputs.msi_version }}';
+            } else {
+              config.version += '${{ steps.date_run.outputs.bundle_version }}';
+            }
             fs.writeFileSync('$CONFIG_FILE', JSON.stringify(config, null, 2));
           "
           # 显示更新后的配置
@@ -117,7 +121,3 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
-          includeDebug: false
-          includeRelease: true
-          msiIdentifier: "com.twenty-two.app"
-          msiProductName: "__VERSION__${{ steps.date_run.outputs.msi_version }}"
