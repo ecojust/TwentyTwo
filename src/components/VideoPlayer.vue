@@ -340,6 +340,7 @@ onUnmounted(() => {
     padding: 15px 20px !important;
     transition: opacity 0.3s ease;
     pointer-events: none;
+    color: #c1c1c1;
 
     &.controls-hidden {
       opacity: 0;
@@ -382,6 +383,7 @@ onUnmounted(() => {
           box-shadow: none;
           .el-input__inner {
             // background: transparent;
+            color: #c1c1c1;
           }
         }
       }
