@@ -18,11 +18,11 @@ TwentyTwo 是一款基于 Tauri,Vue3,Typescript 的跨平台视频搜索、播�
 ## 🖼️ 项目预览
 
 ![搜索](./preview/search.png)
-![历史](./preview/history.png)
+![历史](./preview/history.png)width=100px
 ![合集](./preview/collection.png)
 ![播放](./preview/movie.png)
 
-## ✨ 已完成功能
+## ✨ 功能列表
 
 | 功能分类          | 功能描述             | 状态      |
 | ----------------- | -------------------- | --------- |
