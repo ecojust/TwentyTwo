@@ -15,8 +15,6 @@
       <!-- 原来的导入插件卡片被移除 -->
 
       <div class="plugin-list">
-        <h3>已安装插件</h3>
-
         <el-empty
           v-if="plugins.length === 0"
           description="暂无已安装插件，请通过URL导入插件"
@@ -24,7 +22,7 @@
         ></el-empty>
 
         <el-row v-else :gutter="20">
-          <el-scrollbar wrap-style="height:calc(100vh - 310px);width:100%;">
+          <el-scrollbar wrap-style="height:calc(100vh - 246px);width:100%;">
             <div
               class="plugin-item"
               v-for="plugin in plugins"
@@ -348,8 +346,6 @@ onBeforeUnmount(() => {
   }
 
   .plugin-list {
-    margin-top: 20px;
-
     .plugin-item {
       width: 300px;
       height: 200px;
