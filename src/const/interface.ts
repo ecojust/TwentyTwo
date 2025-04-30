@@ -22,6 +22,11 @@ export interface IPlugin {
   };
 }
 
+export interface IThemeItem {
+  name: string;
+  value: string;
+}
+
 export interface IResult {
   success: boolean;
   message: string;

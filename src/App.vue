@@ -16,10 +16,12 @@
 import { onMounted, ref } from "vue";
 import FreshNavbar from "./components/FreshNavbar.vue";
 import { invoke } from "@tauri-apps/api/core";
+import Config from "./tool/config";
 
 const iframeRef = ref(null);
 
 onMounted(async () => {
+  await Config.applyTheme();
   // await invoke("fetch_request", {
   //   url: "https://tv.yinghuadongman.info/play_4945-1-1.html",
   // });
@@ -48,6 +50,7 @@ onMounted(async () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+
   .main-content {
     flex: 1;
     padding: 20px;
@@ -55,6 +58,7 @@ onMounted(async () => {
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
+    backdrop-filter: blur(10px);
   }
 }
 </style>

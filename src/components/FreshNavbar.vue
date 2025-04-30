@@ -53,7 +53,7 @@ const route = useRoute();
 const currentRoute = computed(() => route.path);
 </script>
 
-<style lang="less" scoped>
+<style lang="less">
 // 小清新导航栏样式
 .fresh-navbar {
   position: sticky;
