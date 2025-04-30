@@ -49,7 +49,6 @@ onMounted(async () => {
 <style lang="less">
 .setting-view {
   width: 100%;
-  padding: 20px;
 
   .theme-settings {
     h2 {

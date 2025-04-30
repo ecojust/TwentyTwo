@@ -22,7 +22,7 @@
         ></el-empty>
 
         <el-row v-else :gutter="20">
-          <el-scrollbar wrap-style="height:calc(100vh - 246px);width:100%;">
+          <el-scrollbar wrap-style="height:calc(100vh - 206px);width:100%;">
             <div
               class="plugin-item"
               v-for="plugin in plugins"
@@ -343,6 +343,9 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    h2 {
+      margin: 0;
+    }
   }
 
   .plugin-list {

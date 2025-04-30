@@ -4,9 +4,13 @@
       <template #header>
         <div class="view-header">
           <h2>视频搜索</h2>
-          <p>当前插件：{{ activePlugin }}</p>
         </div>
-        <div class="status">{{ status }}</div>
+
+        <div class="status">
+          {{ status }}
+
+          <div class="current-plugin">当前插件：{{ activePlugin }}</div>
+        </div>
       </template>
 
       <!-- 搜索表单 -->
@@ -37,7 +41,7 @@
       ></el-empty>
 
       <el-row v-else-if="searchResults.length > 0" :gutter="20">
-        <el-scrollbar wrap-style="height:calc(100vh - 340px);width:100%;">
+        <el-scrollbar wrap-style="height:calc(100vh - 305px);width:100%;">
           <div
             class="video-item"
             v-for="(result, index) in searchResults"
@@ -215,6 +219,15 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    h2 {
+      margin: 0;
+    }
+  }
+  .status {
+    margin-top: 5px;
+    .current-plugin {
+      float: right;
+    }
   }
 
   .search-form {
