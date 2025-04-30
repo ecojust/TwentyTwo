@@ -12,7 +12,7 @@
 
         <p class="app-version">版本: {{ appVersion }}</p>
 
-        <el-scrollbar wrap-style="height:calc(100vh - 430px);width:100%;">
+        <el-scrollbar wrap-style="height:calc(100vh - 374px);width:100%;">
           <div class="app-description">
             <p>TwentyTwo是一个跨平台的视频搜索和播放工具</p>
             <p>

@@ -24,6 +24,10 @@
           <el-icon class="navbar-icon"><Connection /></el-icon>
           <span>插件</span>
         </router-link>
+        <router-link to="/setting" class="navbar-item" active-class="active">
+          <el-icon class="navbar-icon"><Setting /></el-icon>
+          <span>设置</span>
+        </router-link>
         <router-link to="/about" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><InfoFilled /></el-icon>
           <span>关于</span>
@@ -39,6 +43,7 @@ import {
   Folder,
   Connection,
   InfoFilled,
+  Setting,
 } from "@element-plus/icons-vue";
 import { computed } from "vue";
 import { useRoute } from "vue-router";

@@ -66,13 +66,13 @@
     <!-- 添加剧集列表 -->
     <div class="episode-list" :class="{ 'controls-hidden': controlsHidden }">
       <div class="episode-list-header">剧集列表</div>
-      <div class="episode-list-content">
+      <div class="episode-list-content" ref="listRef">
         <div
           v-for="(source, index) in videoSources"
           :key="index"
           class="episode-item"
           :class="{ active: source.real === currentVideo.real }"
-          @click="switchVideo(source)"
+          @click="switchVideo(source, index)"
         >
           <span>第 {{ index + 1 }} 集</span>
           <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
@@ -156,6 +156,7 @@ const computedVideoType = computed(() => {
   return mimeTypes[extension] || "";
 });
 
+const listRef = ref(null);
 const videoRef = ref(null);
 const controlsHidden = ref(false);
 let hideControlsTimer = null;
@@ -171,7 +172,7 @@ const handleClose = () => {
 };
 
 // 切换视频
-const switchVideo = async (video) => {
+const switchVideo = async (video, index) => {
   if (!video.real) {
     const res = await Plugin.parseVideoUrl(video.origin);
     currentVideo.value = res[0];
@@ -185,6 +186,11 @@ const switchVideo = async (video) => {
   } else {
     currentVideo.value = video;
   }
+
+  if (listRef.value) {
+    listRef.value.scrollTop = Math.max(index - 7, 0) * 44;
+  }
+
   console.log("切换视频成功");
   const bool = await Player.waitForElement(`#${props.id}`, 10000);
   if (bool) {
@@ -271,7 +277,7 @@ const playNextEpisode = async () => {
   );
   showNextEpisodeHint.value = false;
   if (currentIndex > -1 && currentIndex < videoSources.value.length - 1) {
-    await switchVideo(videoSources.value[currentIndex + 1]);
+    await switchVideo(videoSources.value[currentIndex + 1], currentIndex + 1);
   }
   startEndingProcess.value = false;
 };
@@ -311,7 +317,7 @@ onMounted(async () => {
   handleMouseMove();
   videoSources.value = [...(props.video.video_urls || [])];
   if (videoSources.value[0]) {
-    await switchVideo(videoSources.value[0]);
+    await switchVideo(videoSources.value[0], 0);
   }
 });
 

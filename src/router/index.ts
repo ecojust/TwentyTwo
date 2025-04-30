@@ -3,6 +3,7 @@ import SearchView from "../views/SearchView.vue";
 import LocalView from "../views/LocalView.vue";
 import PluginsView from "../views/PluginsView.vue";
 import AboutView from "../views/AboutView.vue";
+import SettingView from "../views/SettingView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -26,7 +27,11 @@ const router = createRouter({
       name: "plugins",
       component: PluginsView,
     },
-
+    {
+      path: "/setting",
+      name: "setting",
+      component: SettingView,
+    },
     {
       path: "/about",
       name: "about",

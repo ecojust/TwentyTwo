@@ -713,6 +713,7 @@ onMounted(async () => {
     margin: 10px;
     display: inline-block;
     width: 260px;
+    cursor: pointer;
   }
   .collection-item {
     .video-info {
