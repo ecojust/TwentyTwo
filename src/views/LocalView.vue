@@ -699,7 +699,7 @@ onMounted(async () => {
 });
 </script>
 
-<style lang="less" scoped>
+<style lang="less">
 .local-view {
   .view-header {
     h2 {

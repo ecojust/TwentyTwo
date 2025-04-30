@@ -58,7 +58,7 @@ const currentRoute = computed(() => route.path);
 .fresh-navbar {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 10;
   padding: 10px 0;
   background-color: var(--fresh-bg, rgba(255, 255, 255, 0.9));
   backdrop-filter: blur(10px);
