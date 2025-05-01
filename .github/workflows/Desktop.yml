@@ -33,6 +33,10 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
+      - name: Setup GitHub CLI
+        run: |
+          gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+
       # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -77,9 +81,14 @@ jobs:
         shell: bash
         run: |
           echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-          echo "number=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          # 获取当天的构建序号
+          TODAY_RUNS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/actions/runs" \
+            --jq "[.workflow_runs[] | select(.created_at | startswith(\"$(date +'%Y-%m-%d')\"))] | length")
+          echo "number=$TODAY_RUNS" >> $GITHUB_OUTPUT
           # 修改为符合semver的版本格式：主版本.次版本.修订版本
-          echo "bundle_version=-${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "bundle_version=-$TODAY_RUNS" >> $GITHUB_OUTPUT
           # 获取最近一次提交的信息
           echo "commit_message=$(git log -1 --pretty=%B | head -n 1)" >> $GITHUB_OUTPUT
           # 获取短版本的commit SHA
