@@ -40,10 +40,10 @@ jobs:
 
       - name: Setup GitHub CLI (Windows)
         shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo $env:GITHUB_TOKEN | gh auth login --with-token
+          $env:GH_TOKEN | gh auth login --with-token -
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: matrix.platform == 'windows-latest'
 
       # Checkout repository
