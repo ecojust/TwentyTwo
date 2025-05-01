@@ -34,8 +34,18 @@ jobs:
 
     steps:
       - name: Setup GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh auth login --with-token < <(echo "$GH_TOKEN")
+        if: matrix.platform != 'windows-latest'
+
+      - name: Setup GitHub CLI (Windows)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
         run: |
-          gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+          $env:GITHUB_TOKEN | gh auth login --with-token
+        if: matrix.platform == 'windows-latest'
 
       # Checkout repository
       - name: Checkout repository
@@ -88,7 +98,7 @@ jobs:
             --jq "[.workflow_runs[] | select(.created_at | startswith(\"$(date +'%Y-%m-%d')\"))] | length")
           echo "number=$TODAY_RUNS" >> $GITHUB_OUTPUT
           # 修改为符合semver的版本格式：主版本.次版本.修订版本
-          echo "bundle_version=-$TODAY_RUNS" >> $GITHUB_OUTPUT
+          echo "bundle_version=-$(date +'%m%d')$TODAY_RUNS" >> $GITHUB_OUTPUT
           # 获取最近一次提交的信息
           echo "commit_message=$(git log -1 --pretty=%B | head -n 1)" >> $GITHUB_OUTPUT
           # 获取短版本的commit SHA
