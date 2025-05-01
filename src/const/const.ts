@@ -34,7 +34,9 @@ export const SYSTEM_THEMES = [
 
 export const THEME_TEMPLATE = `
 .app-container {
-  /* background: #c77f7f !important; */
+  // background: #c77f7f !important;
+  // background-image: url("https://img.xjh.me/random_img.php?ctype=nature&type=bg&return=302&r=1746024544585&y=1");
+  // background-size:contain;
 }
 .fresh-navbar {
   /* background-color: #7e3232 !important; */
