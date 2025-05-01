@@ -2,7 +2,7 @@
   <div class="setting-view">
     <el-card>
       <div class="theme-settings">
-        <h2 v-on="longPress()">皮肤设置</h2>
+        <h2 v-on="longPress()">主题设置</h2>
         <div class="theme-list">
           <div
             v-for="theme in SYSTEM_THEMES"
