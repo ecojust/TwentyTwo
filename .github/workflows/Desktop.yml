@@ -34,17 +34,16 @@ jobs:
 
     steps:
       - name: Setup GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh auth login --with-token < <(echo "$GH_TOKEN")
+        run: |
+          gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
         if: matrix.platform != 'windows-latest'
 
       - name: Setup GitHub CLI (Windows)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $env:GITHUB_TOKEN | gh auth login --with-token
+          echo $env:GITHUB_TOKEN | gh auth login --with-token
         if: matrix.platform == 'windows-latest'
 
       # Checkout repository
