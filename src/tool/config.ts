@@ -53,6 +53,13 @@ export default class Config {
     }
   }
 
+  static applyDraftTheme(content: string) {
+    const themeStyle = document.querySelector("#theme");
+    if (themeStyle) {
+      themeStyle.textContent = content;
+    }
+  }
+
   static async setConfiguration(config: any) {
     const res = await File._writeFile(CONFIG_FILE_NAME, JSON.stringify(config));
     return res;

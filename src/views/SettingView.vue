@@ -2,7 +2,7 @@
   <div class="setting-view">
     <el-card>
       <div class="theme-settings">
-        <h2>皮肤设置</h2>
+        <h2 v-on="longPress()">皮肤设置</h2>
         <div class="theme-list">
           <div
             v-for="theme in SYSTEM_THEMES"
@@ -19,24 +19,90 @@
         </div>
       </div>
     </el-card>
+
+    <!-- 新增皮肤开发对话框 -->
+    <el-dialog
+      class="dev-dialog"
+      v-model="showDevDialog"
+      width="80%"
+      :close-on-click-modal="false"
+      destroy-on-close
+      :show-close="false"
+      @close="handlecloseDevDialog"
+    >
+      <div class="dev-container">
+        <div class="dev-header">
+          <div class="style-title">
+            <span title="点击查看效果" class="run" @click="run">🎨</span>
+            <!-- <el-button size="small" >🎨</el-button> -->
+          </div>
+
+          <span
+            class="header-close"
+            size="small"
+            @click="showDevDialog = false"
+          >
+            ❎
+          </span>
+        </div>
+        <div class="editor-container">
+          <div ref="monacoContainer" class="monaco-editor"></div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import Config from "../tool/config";
-import { SYSTEM_THEMES } from "../const/const";
+import { SYSTEM_THEMES, THEME_TEMPLATE } from "../const/const";
+import Monaco from "../tool/monaco";
+import { Close } from "@element-plus/icons-vue";
+import Event from "../tool/event";
 
 const themes = ref([]);
-
 const currentTheme = ref("default");
+const showDevDialog = ref(false);
+const monacoContainer = ref(null);
+
+const longPress = () => {
+  return Event.longPress(1000, handleOpenEditorDialog).value;
+};
 
 const changeTheme = async (theme) => {
   currentTheme.value = theme;
   await Config.setTheme(theme);
   await Config.applyTheme();
-  // 这里可以添加主题切换的具体实现逻辑
-  // 例如：修改CSS变量、存储用户偏好等
+};
+
+const handleOpenEditorDialog = () => {
+  showDevDialog.value = true;
+  nextTick(async () => {
+    if (monacoContainer.value) {
+      Monaco.create(
+        monacoContainer.value,
+        {
+          language: "css",
+        },
+        THEME_TEMPLATE,
+        () => {
+          // const content = Monaco.getValue().trim();
+          // Config.applyDraftTheme(content);
+        }
+      );
+    }
+  });
+};
+
+const run = () => {
+  const content = Monaco.getValue().trim();
+  Config.applyDraftTheme(content);
+};
+
+const handlecloseDevDialog = async () => {
+  Monaco.dispose();
+  await Config.applyTheme();
 };
 
 onMounted(async () => {
@@ -130,6 +196,59 @@ onMounted(async () => {
 
         &:hover .theme-name {
           background: #34495e;
+        }
+      }
+    }
+  }
+  .el-overlay {
+    pointer-events: none;
+  }
+  .dev-dialog {
+    background: rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+
+    header {
+      display: none;
+    }
+    .dev-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+      padding-top: 40px;
+      backdrop-filter: blur(10px);
+      opacity: 0.5;
+      .dev-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 90;
+        width: calc(100% - 40px);
+        padding: 5px 20px !important;
+        transition: opacity 0.3s ease;
+        .run {
+          cursor: pointer;
+          font-size: 16px;
+          margin-left: 10px;
+        }
+        .header-close {
+          position: absolute;
+          right: 0;
+          top: 0px;
+          cursor: pointer;
+        }
+      }
+      .editor-container {
+        flex: 1;
+        height: 80%;
+        // border: 1px solid #dcdfe6;
+        // border-radius: 4px;
+        overflow: hidden;
+
+        .monaco-editor {
+          height: 100%;
+          min-height: 400px;
         }
       }
     }

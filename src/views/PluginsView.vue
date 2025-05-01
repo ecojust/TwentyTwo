@@ -111,14 +111,22 @@
       <div class="dev-container">
         <div class="dev-header">
           <!-- <div class="tv-style-title">插件调试</div> -->
-          <el-button
+          <!-- <el-button
             class="player-header-close"
             type="primary"
             size="small"
             @click="showDevDialog = false"
           >
             <el-icon><Close /></el-icon>
-          </el-button>
+          </el-button> -->
+
+          <span
+            class="plugin-dev-close"
+            size="small"
+            @click="showDevDialog = false"
+          >
+            ❎
+          </span>
         </div>
         <div class="editor-container">
           <div ref="monacoContainer" class="monaco-editor"></div>
@@ -452,6 +460,15 @@ onBeforeUnmount(() => {
         width: calc(100% - 40px);
         padding: 5px 20px !important;
         transition: opacity 0.3s ease;
+
+        .plugin-dev-close {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          font-size: 16px;
+          cursor: pointer;
+          color: #fff;
+        }
 
         &.controls-hidden {
           opacity: 0;
