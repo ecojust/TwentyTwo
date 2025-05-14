@@ -13,7 +13,7 @@ export default class File {
   static async _deleteFile(file: string) {
     try {
       await remove(file, {
-        baseDir: BaseDirectory.AppData,
+        baseDir: BaseDirectory.Resource,
       });
       return {
         success: true,
@@ -40,7 +40,7 @@ export default class File {
         await this._readDir(prePath);
       }
       await writeFile(file, new TextEncoder().encode(content), {
-        baseDir: BaseDirectory.AppData,
+        baseDir: BaseDirectory.Resource,
       });
       res = {
         success: true,
@@ -66,7 +66,7 @@ export default class File {
     let content = default_value || "";
     try {
       content = new TextDecoder("utf-8").decode(
-        await readFile(file, { baseDir: BaseDirectory.AppData })
+        await readFile(file, { baseDir: BaseDirectory.Resource })
       );
       res = {
         success: true,
@@ -84,13 +84,13 @@ export default class File {
     let entries: Array<DirEntry> = [];
     try {
       const res = await readDir(dir, {
-        baseDir: BaseDirectory.AppData,
+        baseDir: BaseDirectory.Resource,
       });
       entries = res;
     } catch (error) {
       await mkdir(dir, {
         recursive: true,
-        baseDir: BaseDirectory.AppData,
+        baseDir: BaseDirectory.Resource,
       });
       entries = [];
     } finally {
