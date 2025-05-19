@@ -9,6 +9,7 @@ import { IThemeItem } from "../const/interface";
 
 export default class Config {
   static async setChannels(channels: any) {
+    console.log("channels", channels);
     // const res = await this.getConfiguration();
     // if (res) {
     //   return res.theme;

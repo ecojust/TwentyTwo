@@ -1,10 +1,5 @@
 import File from "./file";
-import {
-  CONFIG_FILE_NAME,
-  PLAYER_LIST_FILE_NAME,
-  THEMES_FOLDER_NAME,
-  SYSTEM_THEMES,
-} from "../const/const";
+import { PLAYER_LIST_FILE_NAME } from "../const/const";
 
 export default class PlayerList {
   static async getConfiguration() {
