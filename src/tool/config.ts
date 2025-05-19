@@ -8,6 +8,12 @@ import {
 import { IThemeItem } from "../const/interface";
 
 export default class Config {
+  static async setChannels(channels: any) {
+    // const res = await this.getConfiguration();
+    // if (res) {
+    //   return res.theme;
+    // }
+  }
   static async getConfiguration() {
     const res = await File._readFile(
       CONFIG_FILE_NAME,

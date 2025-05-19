@@ -12,18 +12,18 @@
         <span v-else class="navbar-title">TwentyTwo</span>
       </div>
       <div class="navbar-menu">
-        <router-link to="/search" class="navbar-item" active-class="active">
+        <!-- <router-link to="/search" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><Search /></el-icon>
           <span>搜索</span>
-        </router-link>
+        </router-link> -->
         <router-link to="/local" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><Folder /></el-icon>
-          <span>本地资源</span>
+          <span>频道资源</span>
         </router-link>
-        <router-link to="/plugins" class="navbar-item" active-class="active">
+        <!-- <router-link to="/plugins" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><Connection /></el-icon>
           <span>插件</span>
-        </router-link>
+        </router-link> -->
         <router-link to="/setting" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><Setting /></el-icon>
           <span>设置</span>

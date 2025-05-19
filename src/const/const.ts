@@ -1,4 +1,6 @@
 export const CONFIG_FILE_NAME = "settings.json";
+export const PLAYER_LIST_FILE_NAME = "player_list.json";
+
 export const HISTORY_FILE_NAME = "history.json";
 export const COLLECTION_FOLDER_NAME = "collections";
 export const THEMES_FOLDER_NAME = "themes";

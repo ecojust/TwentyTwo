@@ -10,7 +10,7 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      redirect: "/search",
+      redirect: "/local",
     },
     {
       path: "/search",

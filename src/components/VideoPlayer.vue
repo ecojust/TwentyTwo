@@ -74,7 +74,7 @@
           :class="{ active: source.real === currentVideo.real }"
           @click="switchVideo(source, index)"
         >
-          <span>第 {{ index + 1 }} 集</span>
+          <span class="title">{{ source.title }}</span>
           <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
         </div>
       </div>
@@ -98,19 +98,12 @@ import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
 import { Close, Check } from "@element-plus/icons-vue";
 import Plugin from "../tool/plugin";
 import Player from "../tool/player";
+import PlayerList from "../tool/playerList";
 
 // import { IVideo } from "../const/interface";
 
 const emit = defineEmits(["on-close", "on-update"]);
 const props = defineProps({
-  video: {
-    type: Object,
-    required: true,
-    default: {
-      origin: "",
-      real: "-1",
-    },
-  },
   id: {
     type: String,
     required: false,
@@ -119,25 +112,24 @@ const props = defineProps({
 });
 
 const videoSources = ref([]);
-
-const currentVideo = ref({
-  origin: "",
-  real: "-1",
-});
+const currentVideo = ref({});
 
 const videoTitle = computed(() => {
-  return props.video.title;
+  return currentVideo.value?.title;
 });
 
 const videoType = computed(() => {
-  return props.video.type;
+  return currentVideo.value?.type;
 });
 
 // 根据视频URL自动分析视频类型
 const computedVideoType = computed(() => {
+  const url = currentVideo.value?.real;
+  console.log("url", url);
+  if (!url) return "";
   const extension =
     videoType.value?.toLowerCase() ||
-    currentVideo.value.real.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
+    currentVideo.value?.real.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
 
   // 根据扩展名映射到MIME类型
   const mimeTypes = {
@@ -173,19 +165,7 @@ const handleClose = () => {
 
 // 切换视频
 const switchVideo = async (video, index) => {
-  if (!video.real) {
-    const res = await Plugin.parseVideoUrl(video.origin);
-    currentVideo.value = res[0];
-    videoSources.value.splice(
-      videoSources.value.findIndex((s) => s.origin == video.origin),
-      1,
-      res[0]
-    );
-
-    emit("on-update", videoSources.value);
-  } else {
-    currentVideo.value = video;
-  }
+  currentVideo.value = video;
 
   if (listRef.value) {
     listRef.value.scrollTop = Math.max(index - 7, 0) * 44;
@@ -315,9 +295,9 @@ const clearTimers = () => {
 onMounted(async () => {
   clearTimers();
   handleMouseMove();
-  videoSources.value = [...(props.video.video_urls || [])];
+  videoSources.value = await PlayerList.getVideoList();
   if (videoSources.value[0]) {
-    await switchVideo(videoSources.value[0], 0);
+    await switchVideo(videoSources.value[0]);
   }
 });
 
@@ -458,7 +438,7 @@ onUnmounted(() => {
     height: calc(100% - 120px);
     right: 0;
     top: 50px;
-    width: 120px;
+    width: 180px;
     // background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(8px);
     opacity: 1;
@@ -501,7 +481,13 @@ onUnmounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-
+      .title {
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
       .check-icon {
         color: #67c23a;
         font-size: 16px;

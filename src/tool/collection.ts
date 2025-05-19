@@ -140,6 +140,17 @@ export default class Collection {
     );
   }
 
+  static async importFromData(data: string) {
+    const newdata = Object.assign(JSON.parse(data), {
+      time: new Date().toLocaleString(),
+    });
+
+    await File._writeFile(
+      `${COLLECTION_FOLDER_NAME}/${newdata.id}.json`,
+      JSON.stringify(newdata)
+    );
+  }
+
   static async importFromUrl(url: string) {
     try {
       const response = (await invoke("http_get", {

@@ -3,72 +3,12 @@
     <el-card>
       <template #header>
         <div class="view-header">
-          <h2>本地资源</h2>
+          <h2>频道资源</h2>
         </div>
       </template>
 
       <el-tabs v-model="activeTab">
-        <el-tab-pane label="历史记录" name="history">
-          <el-empty
-            v-if="history.length === 0"
-            description="暂无历史记录"
-            :image-size="200"
-          ></el-empty>
-
-          <el-row v-else-if="history.length > 0" :gutter="20">
-            <el-scrollbar wrap-style="height:calc(100vh - 260px);width:100%;">
-              <div
-                class="history-item"
-                v-for="(result, index) in history"
-                :key="index"
-                :xs="24"
-                :sm="12"
-                :md="8"
-                :lg="6"
-              >
-                <el-card
-                  class="video-card"
-                  :body-style="{ padding: '0px' }"
-                  shadow="hover"
-                >
-                  <div class="video-thumbnail">
-                    <el-image
-                      :src="result.thumbnail || '/placeholder.jpg'"
-                      :alt="result.title"
-                      fit="contain"
-                    ></el-image>
-                    <!-- 添加居中的播放图标 -->
-                    <div
-                      class="play-icon-overlay"
-                      @click="playVideo(result, 'history')"
-                    >
-                      <el-icon class="play-icon"><VideoPlay /></el-icon>
-                    </div>
-                  </div>
-                  <div class="video-info">
-                    <h3>{{ result.title }}</h3>
-                    <span>{{ result.text }}</span>
-                    <!-- 移除原来的播放按钮，只保留收藏按钮 -->
-                    <div class="video-actions">
-                      <el-button
-                        @click="addToCollection(result)"
-                        type="warning"
-                        size="small"
-                        plain
-                      >
-                        加入合集
-                      </el-button>
-                    </div>
-
-                    <div class="time">{{ result.time }}</div>
-                  </div>
-                </el-card>
-              </div>
-            </el-scrollbar>
-          </el-row>
-        </el-tab-pane>
-
-        <el-tab-pane label="我的合集" name="favorites">
+        <el-tab-pane label="视频合集" name="video">
           <el-empty
             v-if="collection.length === 0"
             @click="addCollection"
@@ -102,19 +42,19 @@
                     <!-- 添加居中的播放图标 -->
                   </div>
                   <div class="video-info">
-                    <h3>{{ coll.title }} ({{ coll.videos.length }})</h3>
+                    <h3>{{ coll.title }} ({{ coll.video_urls.length }})</h3>
                     <el-text class="video-path" truncated
                       >{{ coll.id }}
                       <span class="author">
                         {{ coll.author }}
                       </span>
                     </el-text>
-                    <el-button
+                    <!-- <el-button
                       class="copy-collection"
                       @click.stop="exportCollection(coll)"
                       >拷贝合集</el-button
-                    >
-                    <span></span>
+                    > -->
+                    <!-- <span></span> -->
                     <el-button
                       type="warning"
                       class="copy-collection"
@@ -159,9 +99,8 @@
     >
       <VideoPlayer
         v-if="showPlayer"
-        :video="currentVideo"
+        :current-video="currentVideo"
         @on-close="showPlayer = false"
-        @on-update="updateVideo"
       ></VideoPlayer>
     </el-dialog>
 
@@ -222,6 +161,19 @@
               <el-form-item label="URL" required>
                 <el-input
                   v-model="urlImportForm.url"
+                  placeholder="请输入合集URL"
+                  type="textarea"
+                  :rows="3"
+                ></el-input>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+
+          <el-tab-pane label="从JSON导入" name="json">
+            <el-form :model="jsonImportForm" label-width="80px">
+              <el-form-item label="URL" required>
+                <el-input
+                  v-model="jsonImportForm.json"
                   placeholder="请输入合集URL"
                   type="textarea"
                   :rows="3"
@@ -316,7 +268,7 @@
         />
       </div>
       <el-empty
-        v-if="!currentCollection || currentCollection.videos.length === 0"
+        v-if="!currentCollection || currentCollection.video_urls.length === 0"
         description="该合集暂无视频"
         :image-size="200"
       ></el-empty>
@@ -327,7 +279,7 @@
       >
         <div
           class="video-item"
-          v-for="(video, index) in currentCollection.videos"
+          v-for="(video, index) in currentCollection.video_urls"
           :key="index"
           :xs="24"
           :sm="12"
@@ -340,11 +292,11 @@
             shadow="hover"
           >
             <div class="video-thumbnail">
-              <el-image
+              <!-- <el-image
                 :src="video.thumbnail || '/placeholder.jpg'"
                 :alt="video.title"
                 fit="contain"
-              ></el-image>
+              ></el-image> -->
               <div
                 class="play-icon-overlay"
                 @click="playVideo(video, 'collection')"
@@ -353,8 +305,8 @@
               </div>
             </div>
             <div class="video-info">
-              <h3>{{ video.title }}</h3>
-              <span>{{ video.text }}</span>
+              <h3>{{ video.title || "暂无" }}</h3>
+              <!-- <span>{{ video.text }}</span> -->
               <div class="video-actions">
                 <el-button
                   @click.stop="
@@ -393,11 +345,13 @@ import History from "../tool/history";
 import Collection from "../tool/collection";
 import Generater from "../tool/generater";
 import Plugin from "../tool/plugin";
+import PlayerList from "../tool/playerList";
+
 import VideoPlayer from "../components/VideoPlayer.vue";
 import { DEFAULT_COLLECTION_COVER } from "../const/const";
 
 const router = useRouter();
-const activeTab = ref("history");
+const activeTab = ref("video");
 const showPlayer = ref(false);
 const currentVideo = ref({});
 const playMode = ref("history");
@@ -417,28 +371,12 @@ const collection = ref([]);
 const isTitleEditing = ref(false);
 const originalTitle = ref("");
 
-const updateVideo = (video_urls) => {
-  Object.assign(currentVideo.value, {
-    video_urls: video_urls,
-  });
-  switch (playMode.value) {
-    case "history":
-      History.updateHistoryItem(currentVideo.value);
-      break;
-    case "collection":
-      Collection.updateCollectionItem(
-        currentCollection.value.id,
-        currentVideo.value
-      );
-      break;
-  }
-};
-
-function playVideo(video, type) {
+async function playVideo(video, type) {
   playMode.value = type;
-  console.log("playVideo", video);
   currentVideo.value = video;
+  await PlayerList.pushVideo(video);
   showPlayer.value = true;
+  console.log("playVideo", video);
 }
 
 async function addToCollection(video) {
@@ -486,17 +424,21 @@ const collectionCreateMode = ref("manual");
 const urlImportForm = ref({
   url: "",
 });
+const jsonImportForm = ref({
+  json: "",
+});
+
 const importing = ref(false);
 
 const exportCollection = async (coll) => {
   try {
     const needToParse = Collection.checkCollectionIsReady(coll);
-    if (needToParse.length > 0) {
-      ElMessage.warning(
-        `合集 ${coll.title} 中的 ${needToParse.length} 个视频未解析`
-      );
-      return;
-    }
+    // if (needToParse.length > 0) {
+    //   ElMessage.warning(
+    //     `合集 ${coll.title} 中的 ${needToParse.length} 个视频未解析`
+    //   );
+    //   return;
+    // }
 
     const collectionData = JSON.stringify(coll, null, 2);
     await navigator.clipboard.writeText(collectionData);
@@ -508,15 +450,15 @@ const exportCollection = async (coll) => {
 };
 // 添加导入方法
 const importCollection = async () => {
-  if (!urlImportForm.value.url.trim()) {
-    ElMessage.warning("请输入合集URL");
+  if (!jsonImportForm.value.json.trim()) {
+    ElMessage.warning("请输入合集数据");
     return;
   }
 
   importing.value = true;
   try {
     // TODO: 实现从URL导入合集的逻辑
-    const result = await Collection.importFromUrl(urlImportForm.value.url);
+    const result = await Collection.importFromData(jsonImportForm.value.json);
     ElMessage.success("导入成功");
     showCollectionDialog.value = false;
     collection.value = await Collection.getCollections();
