@@ -67,15 +67,18 @@
     <div class="episode-list" :class="{ 'controls-hidden': controlsHidden }">
       <div class="episode-list-header">剧集列表</div>
       <div class="episode-list-content" ref="listRef">
-        <div
-          v-for="(source, index) in videoSources"
-          :key="index"
-          class="episode-item"
-          :class="{ active: source.real === currentVideo.real }"
-          @click="switchVideo(source, index)"
-        >
-          <span class="title">{{ source.title }}</span>
-          <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
+        <div ref="sortableContainer">
+          <div
+            v-for="(source, index) in videoSources"
+            :key="index"
+            class="episode-item"
+            :class="{ active: source.real === currentVideo.real }"
+            @click="switchVideo(source, index)"
+            :data-id="index"
+          >
+            <span class="title">{{ source.title }}</span>
+            <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
+          </div>
         </div>
       </div>
     </div>
@@ -99,6 +102,7 @@ import { Close, Check } from "@element-plus/icons-vue";
 import Plugin from "../tool/plugin";
 import Player from "../tool/player";
 import PlayerList from "../tool/playerList";
+import Sortable from "sortable-dnd";
 
 // import { IVideo } from "../const/interface";
 
@@ -113,7 +117,8 @@ const props = defineProps({
 
 const videoSources = ref([]);
 const currentVideo = ref({});
-
+const sortableContainer = ref(null);
+let sortableInstance = null;
 const videoTitle = computed(() => {
   return currentVideo.value?.title;
 });
@@ -291,19 +296,64 @@ const clearTimers = () => {
     countDownTimer = null;
   }
 };
+
+// 初始化可排序列表
+const initSortable = () => {
+  if (!sortableContainer.value) return;
+
+  sortableInstance = new Sortable(sortableContainer.value, {
+    animation: 30,
+    onDrop: async (evt) => {
+      const { oldIndex, newIndex } = evt;
+      if (oldIndex !== newIndex) {
+        // 更新数据源顺序
+        const movedItem = videoSources.value.splice(oldIndex, 1)[0];
+        videoSources.value.splice(newIndex, 0, movedItem);
+
+        console.log("拖拽排序完成", videoSources.value);
+
+        // await PlayerList.updateVideoList(videoSources.value);
+
+        // 可选：通知父组件列表已更新
+        // emit("on-update", videoSources.value);
+      }
+    },
+  });
+};
+
+// 清除Sortable实例
+const destroySortable = () => {
+  if (sortableInstance) {
+    sortableInstance.destroy();
+    sortableInstance = null;
+  }
+};
+
+// 拖拽结束事件处理
+const onDragEnd = async (evt) => {
+  console.log("拖拽排序完成", videoSources.value);
+  await PlayerList.updateVideoList(videoSources.value);
+};
+
 // Clean up when component is unmounted
 onMounted(async () => {
   clearTimers();
   handleMouseMove();
-  videoSources.value = await PlayerList.getVideoList();
+  videoSources.value = await PlayerList.getDeduplicatedVideoList();
   if (videoSources.value[0]) {
     await switchVideo(videoSources.value[0]);
   }
+
+  // 等待DOM更新后初始化Sortable
+  nextTick(() => {
+    initSortable();
+  });
 });
 
 // 组件卸载时清除定时器
 onUnmounted(() => {
   clearTimers();
+  destroySortable();
 });
 </script>
 
@@ -462,6 +512,7 @@ onUnmounted(() => {
     .episode-list-content {
       height: calc(100% - 50px);
       overflow-y: auto;
+      background: rgb(243, 117, 21);
 
       &::-webkit-scrollbar {
         width: 6px;
@@ -481,6 +532,22 @@ onUnmounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      user-select: none;
+
+      // 添加拖拽时的样式
+      &.sortable-ghost {
+        opacity: 0.5;
+        background: rgba(64, 158, 255, 0.1) !important;
+      }
+
+      &.sortable-chosen {
+        background: rgba(64, 158, 255, 0.2);
+      }
+
+      &.sortable-drag {
+        opacity: 0.8;
+        background: rgba(64, 158, 255, 0.3);
+      }
       .title {
         font-size: 12px;
         white-space: nowrap;
@@ -499,7 +566,7 @@ onUnmounted(() => {
 
       &.active {
         background: rgba(64, 158, 255, 0.2);
-        color: #409eff;
+        color: #b8c6d4;
       }
     }
   }
