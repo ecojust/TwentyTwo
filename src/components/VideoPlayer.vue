@@ -76,8 +76,8 @@
             @click="switchVideo(source, index)"
             :data-id="index"
           >
+            <span class="drag-handle"> ... </span>
             <span class="title">{{ source.title }}</span>
-            <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
           </div>
         </div>
       </div>
@@ -97,13 +97,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
-import { Close, Check } from "@element-plus/icons-vue";
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from "vue";
+import { Close, Check, More } from "@element-plus/icons-vue";
 import Plugin from "../tool/plugin";
 import Player from "../tool/player";
 import PlayerList from "../tool/playerList";
 import Sortable from "sortable-dnd";
-
 // import { IVideo } from "../const/interface";
 
 const emit = defineEmits(["on-close", "on-update"]);
@@ -116,6 +115,29 @@ const props = defineProps({
 });
 
 const videoSources = ref([]);
+const videoSources2 = ref([
+  {
+    title: "第1集",
+    real: "URL_ADDRESS.baidu.com",
+  },
+  {
+    title: "第2集",
+    real: "URL_ADDRESS.baidu.com",
+  },
+  {
+    title: "第3集",
+    real: "URL_ADDRESS.baidu.com",
+  },
+  {
+    title: "第4集",
+    real: "URL_ADDRESS.baidu.com",
+  },
+  {
+    title: "第5集",
+    real: "URL_ADDRESS.baidu.com",
+  },
+]);
+
 const currentVideo = ref({});
 const sortableContainer = ref(null);
 let sortableInstance = null;
@@ -276,7 +298,7 @@ const handleMouseMove = () => {
   if (computedVideoType.value == "iframe") return;
   hideControlsTimer = setTimeout(() => {
     controlsHidden.value = true;
-  }, 3000);
+  }, 10000);
 };
 
 // 清除定时器
@@ -302,20 +324,23 @@ const initSortable = () => {
   if (!sortableContainer.value) return;
 
   sortableInstance = new Sortable(sortableContainer.value, {
-    animation: 30,
+    animation: 0,
+    handle: ".drag-handle", // 添加拖拽手柄
     onDrop: async (evt) => {
       const { oldIndex, newIndex } = evt;
       if (oldIndex !== newIndex) {
-        // 更新数据源顺序
-        const movedItem = videoSources.value.splice(oldIndex, 1)[0];
-        videoSources.value.splice(newIndex, 0, movedItem);
+        const newArray = [...videoSources.value];
+        const movedItem = newArray[oldIndex];
+        newArray.splice(oldIndex, 1);
+        newArray.splice(newIndex, 0, movedItem);
 
-        console.log("拖拽排序完成", videoSources.value);
+        // 强制更新视图
+        videoSources.value = [];
+        await nextTick();
+        videoSources.value = newArray;
 
-        // await PlayerList.updateVideoList(videoSources.value);
-
-        // 可选：通知父组件列表已更新
-        // emit("on-update", videoSources.value);
+        await PlayerList.updateVideoList(videoSources.value);
+        await nextTick();
       }
     },
   });
@@ -488,7 +513,7 @@ onUnmounted(() => {
     height: calc(100% - 120px);
     right: 0;
     top: 50px;
-    width: 180px;
+    width: 190px;
     // background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(8px);
     opacity: 1;
@@ -512,7 +537,7 @@ onUnmounted(() => {
     .episode-list-content {
       height: calc(100% - 50px);
       overflow-y: auto;
-      background: rgb(243, 117, 21);
+      background: rgba(0, 0, 0, 0.2); // 修改为半透明黑色背景
 
       &::-webkit-scrollbar {
         width: 6px;
@@ -526,47 +551,48 @@ onUnmounted(() => {
 
     .episode-item {
       padding: 12px 15px;
-      color: #fff;
+      color: rgba(255, 255, 255, 0.8);
       cursor: pointer;
       transition: all 0.3s ease;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      user-select: none;
-
-      // 添加拖拽时的样式
-      &.sortable-ghost {
-        opacity: 0.5;
-        background: rgba(64, 158, 255, 0.1) !important;
-      }
-
-      &.sortable-chosen {
-        background: rgba(64, 158, 255, 0.2);
-      }
-
-      &.sortable-drag {
-        opacity: 0.8;
-        background: rgba(64, 158, 255, 0.3);
-      }
+      gap: 8px;
+      user-select: none !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative; // 添加相对定位
       .title {
         font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
       }
-      .check-icon {
-        color: #67c23a;
-        font-size: 16px;
-      }
-
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1); // 增加hover时的背景透明度
       }
 
       &.active {
-        background: rgba(64, 158, 255, 0.2);
-        color: #b8c6d4;
+        background: rgba(64, 158, 255, 0.2); // 增加选中状态的背景透明度
+        color: #fff;
+        border-left: 3px solid #409eff; // 添加左侧边框标识
+        padding-left: 12px; // 调整左内边距以补偿边框宽度
+
+        .drag-handle {
+          color: #409eff; // 选中状态下图标颜色改为主题色
+        }
+
+        .title {
+          font-weight: 500; // 选中状态下文字加粗
+        }
+      }
+
+      .drag-handle {
+        cursor: move;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 16px;
+        transition: all 0.3s ease;
+        transform: rotateZ(90deg);
+        font-weight: 900;
+
+        &:hover {
+          color: #409eff; // 鼠标悬停在拖拽图标上时变为主题色
+        }
       }
     }
   }
