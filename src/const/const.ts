@@ -22,7 +22,7 @@ export const SYSTEM_THEMES = [
       .app-container {
         /* background: #c77f7f; */
         background-image: url("https://img.xjh.me/random_img.php?ctype=nature&type=bg&return=302&r=1746024544585&y=1");
-        background-size:contain;
+        background-size:cover;
       }
       .fresh-navbar {
         /* background-color: #7e3232 !important; */
