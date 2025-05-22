@@ -44,7 +44,7 @@ export default class Generater {
   // 解密频道信息
   static decryptChannel(
     encryptedString: string
-  ): { name: string; id: string } | null {
+  ): { name: string; id: string; timestamp: string } | null {
     try {
       // 检查前缀是否正确
       if (!encryptedString.startsWith("vsch_")) {
@@ -69,6 +69,7 @@ export default class Generater {
       return {
         name: channelInfo.name,
         id: channelInfo.id,
+        timestamp: channelInfo.timestamp,
       };
     } catch (error) {
       console.error("频道信息解密失败:", error);

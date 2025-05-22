@@ -66,18 +66,49 @@
       </div>
     </el-card>
 
-    <!-- 新增皮肤开发对话框 -->
     <el-dialog
       class="dev-dialog"
       v-model="showDevDialog"
-      width="80%"
+      width="500px"
       :close-on-click-modal="false"
       destroy-on-close
       :show-close="false"
-      @close="handlecloseDevDialog"
+      title="生成频道码"
     >
       <div class="dev-container">
-        <el-button type="primary" size="small" text>生成</el-button>
+        <el-form :model="channelGenerateForm" label-width="80px">
+          <el-form-item label="频道名称">
+            <el-input
+              v-model="channelGenerateForm.name"
+              placeholder="请输入频道名称"
+            />
+          </el-form-item>
+          <el-form-item label="频道ID">
+            <el-input
+              v-model="channelGenerateForm.id"
+              placeholder="请输入频道ID"
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-input
+              v-model="channelGenerateForm.result"
+              placeholder="生成的频道码将显示在这里"
+              readonly
+            >
+              <template #append>
+                <el-button @click="copyChannelCode" type="primary">
+                  复制
+                </el-button>
+              </template>
+            </el-input>
+          </el-form-item>
+        </el-form>
+        <div class="dialog-footer">
+          <el-button @click="showDevDialog = false">关闭</el-button>
+          <el-button type="primary" @click="generateChannelCode">
+            生成频道码
+          </el-button>
+        </div>
       </div>
     </el-dialog>
 
@@ -209,6 +240,7 @@ const decodeChannel = () => {
   if (decodeResult) {
     channelForm.name = decodeResult.name;
     channelForm.id = decodeResult.id;
+    console.log(decodeResult);
   } else {
     ElMessage.error("解码失败，请检查输入的频道码");
   }
@@ -216,6 +248,39 @@ const decodeChannel = () => {
 
 const longPress = () => {
   return Event.longPress(1000, handleOpenEditorDialog).value;
+};
+
+// 添加频道生成表单数据
+const channelGenerateForm = reactive({
+  name: "",
+  id: "",
+  result: "",
+});
+
+// 生成频道码
+const generateChannelCode = () => {
+  if (!channelGenerateForm.name || !channelGenerateForm.id) {
+    ElMessage.warning("请输入频道名称和ID");
+    return;
+  }
+  channelGenerateForm.result = Generater.encryptChannel(
+    channelGenerateForm.name,
+    channelGenerateForm.id
+  );
+};
+
+// 复制频道码
+const copyChannelCode = async () => {
+  if (!channelGenerateForm.result) {
+    ElMessage.warning("请先生成频道码");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(channelGenerateForm.result);
+    ElMessage.success("复制成功");
+  } catch (err) {
+    ElMessage.error("复制失败");
+  }
 };
 
 const changeTheme = async (theme) => {
@@ -470,199 +535,213 @@ onMounted(async () => {
       }
     }
   }
-}
-</style>
 
-<style lang="less">
-.channel-dialog {
-  .el-dialog__header {
-    padding: 20px 30px;
-    border-bottom: 1px solid #ebeef5;
+  .channel-dialog {
+    .el-dialog__header {
+      padding: 20px 30px;
+      border-bottom: 1px solid #ebeef5;
 
-    .el-dialog__title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #303133;
-    }
-  }
-
-  .el-dialog__body {
-    padding: 25px 30px;
-  }
-
-  .channel-code-section {
-    margin-bottom: 20px;
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-      font-size: 16px;
-      font-weight: 500;
-      color: #303133;
-
-      i {
-        margin-right: 8px;
-        color: #f59712;
+      .el-dialog__title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #303133;
       }
     }
 
-    .channel-code-input {
-      .el-input {
-        .el-input__inner {
-          border-radius: 8px 0 0 8px;
-          font-size: 16px;
-          height: 45px;
-          transition: all 0.3s;
+    .el-dialog__body {
+      padding: 25px 30px;
+    }
 
-          &:focus {
+    .channel-code-section {
+      margin-bottom: 20px;
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 16px;
+        font-weight: 500;
+        color: #303133;
+
+        i {
+          margin-right: 8px;
+          color: #f59712;
+        }
+      }
+
+      .channel-code-input {
+        .el-input {
+          .el-input__inner {
+            border-radius: 8px 0 0 8px;
+            font-size: 16px;
+            height: 45px;
+            transition: all 0.3s;
+
+            &:focus {
+              border-color: #f59712;
+              box-shadow: 0 0 0 2px rgba(245, 151, 18, 0.2);
+            }
+          }
+
+          .el-input-group__append {
+            border-radius: 0 8px 8px 0;
+            padding: 0 15px;
+            background-color: #f59712;
             border-color: #f59712;
-            box-shadow: 0 0 0 2px rgba(245, 151, 18, 0.2);
+            color: white;
+            transition: all 0.3s;
+
+            &:hover {
+              background-color: #e48a0a;
+              border-color: #e48a0a;
+            }
+
+            .el-button {
+              color: white;
+              border: none;
+              background: transparent;
+              font-weight: 500;
+              padding: 8px 15px;
+
+              i {
+                margin-right: 5px;
+              }
+            }
           }
         }
 
-        .el-input-group__append {
-          border-radius: 0 8px 8px 0;
-          padding: 0 15px;
+        .channel-code-tip {
+          margin-top: 8px;
+          color: #909399;
+          font-size: 13px;
+          padding-left: 5px;
+        }
+      }
+    }
+
+    .el-divider {
+      margin: 25px 0;
+
+      .el-divider__text {
+        background-color: #f8f9fa;
+        color: #606266;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 0 15px;
+
+        i {
+          margin-right: 5px;
+          color: #f59712;
+        }
+      }
+    }
+
+    .channel-form {
+      margin-top: 20px;
+
+      .el-form-item {
+        margin-bottom: 20px;
+
+        .el-form-item__label {
+          font-weight: 500;
+          color: #303133;
+        }
+
+        .el-input {
+          .el-input__inner {
+            border-radius: 8px;
+            background-color: #f5f7fa;
+            border-color: #e4e7ed;
+            height: 40px;
+
+            &:disabled {
+              color: #606266;
+              cursor: not-allowed;
+            }
+          }
+
+          .el-input__prefix {
+            color: #909399;
+            font-size: 16px;
+            padding-left: 5px;
+          }
+        }
+      }
+    }
+
+    .dialog-tips {
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+      background-color: #fef6e9;
+      border-radius: 6px;
+      margin-top: 20px;
+
+      i {
+        color: #f59712;
+        font-size: 16px;
+        margin-right: 8px;
+      }
+
+      span {
+        color: #8c6339;
+        font-size: 13px;
+      }
+    }
+
+    .el-dialog__footer {
+      padding: 15px 30px 20px;
+      border-top: 1px solid #ebeef5;
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+
+      .el-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        border-radius: 8px;
+        transition: all 0.3s;
+
+        &--default {
+          &:hover {
+            background-color: #f5f7fa;
+            border-color: #dcdfe6;
+          }
+        }
+
+        &--primary {
           background-color: #f59712;
           border-color: #f59712;
-          color: white;
-          transition: all 0.3s;
 
           &:hover {
             background-color: #e48a0a;
             border-color: #e48a0a;
           }
 
-          .el-button {
-            color: white;
-            border: none;
-            background: transparent;
-            font-weight: 500;
-            padding: 8px 15px;
-
-            i {
-              margin-right: 5px;
-            }
+          &[disabled] {
+            background-color: #fab95e;
+            border-color: #fab95e;
           }
         }
       }
-
-      .channel-code-tip {
-        margin-top: 8px;
-        color: #909399;
-        font-size: 13px;
-        padding-left: 5px;
-      }
     }
   }
 
-  .el-divider {
-    margin: 25px 0;
+  .dev-dialog {
+    .dev-container {
+      padding: 20px;
 
-    .el-divider__text {
-      background-color: #f8f9fa;
-      color: #606266;
-      font-size: 14px;
-      font-weight: 500;
-      padding: 0 15px;
-
-      i {
-        margin-right: 5px;
-        color: #f59712;
-      }
-    }
-  }
-
-  .channel-form {
-    margin-top: 20px;
-
-    .el-form-item {
-      margin-bottom: 20px;
-
-      .el-form-item__label {
-        font-weight: 500;
-        color: #303133;
+      .el-form {
+        margin-bottom: 20px;
       }
 
-      .el-input {
-        .el-input__inner {
-          border-radius: 8px;
-          background-color: #f5f7fa;
-          border-color: #e4e7ed;
-          height: 40px;
-
-          &:disabled {
-            color: #606266;
-            cursor: not-allowed;
-          }
-        }
-
-        .el-input__prefix {
-          color: #909399;
-          font-size: 16px;
-          padding-left: 5px;
-        }
-      }
-    }
-  }
-
-  .dialog-tips {
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    background-color: #fef6e9;
-    border-radius: 6px;
-    margin-top: 20px;
-
-    i {
-      color: #f59712;
-      font-size: 16px;
-      margin-right: 8px;
-    }
-
-    span {
-      color: #8c6339;
-      font-size: 13px;
-    }
-  }
-
-  .el-dialog__footer {
-    padding: 15px 30px 20px;
-    border-top: 1px solid #ebeef5;
-  }
-
-  .dialog-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-
-    .el-button {
-      padding: 10px 20px;
-      font-size: 14px;
-      border-radius: 8px;
-      transition: all 0.3s;
-
-      &--default {
-        &:hover {
-          background-color: #f5f7fa;
-          border-color: #dcdfe6;
-        }
-      }
-
-      &--primary {
-        background-color: #f59712;
-        border-color: #f59712;
-
-        &:hover {
-          background-color: #e48a0a;
-          border-color: #e48a0a;
-        }
-
-        &[disabled] {
-          background-color: #fab95e;
-          border-color: #fab95e;
-        }
+      .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
       }
     }
   }
