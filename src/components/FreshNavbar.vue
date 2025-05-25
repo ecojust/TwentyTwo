@@ -28,12 +28,43 @@
           <el-icon class="navbar-icon"><Setting /></el-icon>
           <span>我的</span>
         </router-link>
+
+        <el-badge
+          type="primary"
+          :show-zero="false"
+          :value="isNew"
+          class="notify-message"
+          @click="showMessage = true"
+        >
+          <el-icon>
+            <Message />
+          </el-icon>
+        </el-badge>
+
         <!-- <router-link to="/about" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><InfoFilled /></el-icon>
           <span>关于</span>
         </router-link> -->
       </div>
     </div>
+
+    <el-dialog title="消息通知" v-model="showMessage" width="600">
+      <el-scrollbar height="300px">
+        <el-timeline style="width: calc(100% - 100px)">
+          <el-timeline-item
+            v-for="item in messagelist"
+            :key="item.id"
+            :timestamp="new Date(~~item.updatetime * 1000).toLocaleString()"
+            placement="top"
+          >
+            <el-card>
+              <div class="message-title">{{ item.title }}</div>
+              <p>{{ item.description }}</p>
+            </el-card>
+          </el-timeline-item>
+        </el-timeline>
+      </el-scrollbar>
+    </el-dialog>
   </nav>
 </template>
 
@@ -41,16 +72,25 @@
 import {
   Search,
   Folder,
+  Message,
   Connection,
   InfoFilled,
   Setting,
 } from "@element-plus/icons-vue";
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-
+import App from "./../api/app";
 // 获取当前路由
 const route = useRoute();
 const currentRoute = computed(() => route.path);
+const messagelist = ref([]);
+const isNew = ref(0);
+const showMessage = ref(false);
+
+onMounted(async () => {
+  messagelist.value = await App.getNotifyList();
+  isNew.value = messagelist.value.filter((item) => item.active == 1).length;
+});
 </script>
 
 <style lang="less">
@@ -105,6 +145,11 @@ const currentRoute = computed(() => route.path);
   .navbar-menu {
     display: flex;
     gap: 12px;
+    justify-content: center; // 居中显示菜单项;
+    align-items: center; // 垂直居中;
+    .notify-message {
+      cursor: pointer;
+    }
   }
 
   .navbar-item {
@@ -169,6 +214,11 @@ const currentRoute = computed(() => route.path);
         transform: scale(1.1);
       }
     }
+  }
+  .message-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
   }
 }
 </style>
