@@ -173,6 +173,10 @@
         <el-icon class="add-item" @click="handleAddItem"
           ><CirclePlusFilled
         /></el-icon>
+
+        <el-button class="add-to-list" @click="add2list"
+          >全部添加到播放列表</el-button
+        >
       </div>
       <el-empty
         v-if="!currentCollection || currentCollection.zyhjnr.length === 0"
@@ -238,7 +242,7 @@
       :close-on-click-modal="false"
     >
       <el-form :model="addForm" label-width="150px">
-        <el-form-item label="标题" required>
+        <el-form-item label="标题">
           <el-input
             clearable
             v-model="addForm.title"
@@ -339,6 +343,10 @@ const addForm = ref({
   real: "",
   type: "",
 });
+
+const add2list = async () => {
+  await PlayerList.pushVideo(currentCollection.value.zyhjnr);
+};
 
 // 处理新增确认
 const handleAddConfirm = async () => {
@@ -718,6 +726,12 @@ onMounted(async () => {
     justify-content: flex-start;
     margin-bottom: 20px;
     font-size: 28px;
+    .add-to-list {
+      font-size: 16px;
+      cursor: pointer;
+      margin-left: 10px;
+      float: right;
+    }
     .add-item {
       // font-size: 28px;
       cursor: pointer;
