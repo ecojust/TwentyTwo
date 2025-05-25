@@ -7,32 +7,37 @@
     <div class="player-header" :class="{ 'controls-hidden': controlsHidden }">
       <div class="tv-style-title">{{ videoTitle }}</div>
 
-      <span class="label">{{ currentVideo.real }}</span>
+      <span class="label">{{ playUrl }}</span>
 
-      <span class="label">视频剩余时间(s):{{ leftEndingTime.toFixed(2) }}</span>
+      <span v-show="computedVideoType !== 'iframe'">
+        <span class="label"
+          >视频剩余时间(s):{{ leftEndingTime.toFixed(2) }}</span
+        >
 
-      <span class="label">片头片尾跳过时间(s):</span>
+        <span class="label">片头片尾跳过时间(s):</span>
 
-      <el-input-number
-        class="skip-ending-setting"
-        v-model="skipStartTime"
-        :min="0"
-        :max="300"
-        :step="10"
-        size="small"
-        controls-position="right"
-        placeholder="设置片尾跳过时间(秒)"
-      />
-      <el-input-number
-        class="skip-ending-setting"
-        v-model="skipEndingTime"
-        :min="0"
-        :max="300"
-        :step="10"
-        size="small"
-        controls-position="right"
-        placeholder="设置片尾跳过时间(秒)"
-      />
+        <el-input-number
+          class="skip-ending-setting"
+          v-model="skipStartTime"
+          :min="0"
+          :max="300"
+          :step="10"
+          size="small"
+          controls-position="right"
+          placeholder="设置片尾跳过时间(秒)"
+        />
+        <el-input-number
+          class="skip-ending-setting"
+          v-model="skipEndingTime"
+          :min="0"
+          :max="300"
+          :step="10"
+          size="small"
+          controls-position="right"
+          placeholder="设置片尾跳过时间(秒)"
+        />
+      </span>
+
       <el-button
         class="player-header-close"
         type="primary"
@@ -45,7 +50,7 @@
 
     <iframe
       v-if="computedVideoType == 'iframe'"
-      :src="currentVideo.real"
+      :src="playUrl"
       frameborder="0"
     ></iframe>
 
@@ -59,7 +64,7 @@
       @timeupdate="updateProgress"
       @loadedmetadata="videoLoaded"
     >
-      <source :src="currentVideo.real" :type="computedVideoType" />
+      <source :src="playUrl" :type="computedVideoType" />
       您的浏览器不支持 HTML5 视频播放。
     </video>
 
@@ -139,14 +144,21 @@ const videoType = computed(() => {
   return currentVideo.value?.type;
 });
 
+const playUrl = computed(() => {
+  return currentVideo.value?.real || currentVideo.value?.origin;
+});
+
 // 根据视频URL自动分析视频类型
 const computedVideoType = computed(() => {
-  const url = currentVideo.value?.real;
-  console.log("url", url);
-  if (!url) return "";
+  const real = currentVideo.value?.real;
+  const origin = currentVideo.value?.origin;
+
+  const testurl = real || origin;
+
+  if (!testurl) return "";
   const extension =
     videoType.value?.toLowerCase() ||
-    currentVideo.value?.real.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
+    testurl.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
 
   // 根据扩展名映射到MIME类型
   const mimeTypes = {
@@ -222,6 +234,9 @@ const startEndingProcess = ref(false);
 
 // 更新视频进度时检查是否需要跳过片尾
 const updateProgress = () => {
+  if (!(computedVideoType.value && computedVideoType.value !== "iframe")) {
+    return;
+  }
   if (!videoRef.value || !skipEndingTime.value) return;
   leftEndingTime.value = videoRef.value.duration - videoRef.value.currentTime;
   // 直接使用 showNextEpisodeHint 来检查状态
@@ -352,6 +367,8 @@ onMounted(async () => {
   if (videoSources.value[0]) {
     await switchVideo(videoSources.value[0]);
   }
+
+  console.log("videoSources.value", videoSources.value);
 
   // 等待DOM更新后初始化Sortable
   nextTick(() => {

@@ -70,7 +70,9 @@ export default class Channel {
     if (res.code !== 200) {
       ElMessage.warning(res.msg);
       return false;
+    } else {
+      ElMessage.success(res.msg);
+      return true;
     }
-    return true;
   }
 }

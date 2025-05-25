@@ -22,7 +22,14 @@ export default class PlayerList {
 
   static async pushVideo(video: any) {
     const res = await this.getConfiguration();
-    if (res.videoList.find((item: any) => item.real === video.real)) return;
+    console.log("添加到列表", video, res.videoList);
+
+    if (
+      res.videoList.find(
+        (item: any) => item.real === video.real && item.origin === video.origin
+      )
+    )
+      return;
     res.videoList.push(video);
     await File._writeFile(PLAYER_LIST_FILE_NAME, JSON.stringify(res));
   }
@@ -64,9 +71,8 @@ export default class PlayerList {
 
     const seen = new Map();
     return array.filter((item) => {
-      if (!item || !item.real) return false;
-
-      const key = item.real;
+      if (!item || (!item.real && !item.origin)) return false;
+      const key = `${item.origin}.${item.real}`;
       if (seen.has(key)) {
         return false;
       } else {

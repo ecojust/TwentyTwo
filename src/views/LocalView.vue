@@ -151,7 +151,8 @@
           <el-button
             type="primary"
             @click="saveCollection()"
-            :loading="importing"
+            :loading="isadding"
+            :disabled="isadding"
           >
             确定
           </el-button>
@@ -330,6 +331,8 @@ const originalTitle = ref("");
 const collectionCreateMode = ref("manual");
 const importing = ref(false);
 const addDialog = ref(false);
+const isadding = ref(false);
+
 const addForm = ref({
   title: "",
   origin: "",
@@ -356,6 +359,7 @@ const handleAddConfirm = async () => {
     nextTick();
 
     addDialog.value = false;
+
     // 重置表单
     addForm.value = {
       title: "",
@@ -380,6 +384,7 @@ async function playVideo(video, type) {
 }
 
 function addCollection() {
+  isadding.value = false;
   showCollectionDialog.value = true;
   collectionCreateMode.value = "manual";
   collectionForm.value = {
@@ -456,13 +461,9 @@ async function saveCollection() {
     description: collectionForm.value.description,
     coverUrl: "",
   };
+  isadding.value = true;
   const success = await Channel.addCollection(newCollection);
   if (success) {
-    ElMessage({
-      message: res.msg,
-      type: "success",
-      duration: 2000,
-    });
     getChannelCollections();
     collectionForm.value = {
       title: "",
@@ -471,6 +472,7 @@ async function saveCollection() {
     };
     showCollectionDialog.value = false;
   }
+  isadding.value = false;
 }
 
 const getChannelCollections = async (channelId) => {
