@@ -1,6 +1,6 @@
 import Fetch from "./fetch";
 import Config from "../tool/config.ts";
-import { ElMessageBox, ElMessage } from "element-plus";
+import { ElMessage } from "element-plus";
 
 // import { get } from "./axios";
 
