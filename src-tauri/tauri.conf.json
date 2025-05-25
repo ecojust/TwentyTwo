@@ -18,7 +18,8 @@
         "height": 600,
         "minWidth": 800,
         "minHeight": 600,
-        "devtools": true
+        "devtools": true,
+        "additionalBrowserArgs": "disable-web-security"
       }
     ],
     "security": {

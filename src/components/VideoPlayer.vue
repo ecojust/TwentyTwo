@@ -78,6 +78,14 @@
           >
             <span class="drag-handle"> ... </span>
             <span class="title">{{ source.title }}</span>
+            <el-button
+              class="delete-btn"
+              type="danger"
+              size="small"
+              @click.stop="handleDeleteVideo(source, index)"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
           </div>
         </div>
       </div>
@@ -97,13 +105,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from "vue";
-import { Close, Check, More } from "@element-plus/icons-vue";
-import Plugin from "../tool/plugin";
+import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
+import { Close, Delete, More } from "@element-plus/icons-vue";
 import Player from "../tool/player";
 import PlayerList from "../tool/playerList";
 import Sortable from "sortable-dnd";
-// import { IVideo } from "../const/interface";
 
 const emit = defineEmits(["on-close", "on-update"]);
 const props = defineProps({
@@ -118,22 +124,6 @@ const videoSources = ref([]);
 const videoSources2 = ref([
   {
     title: "第1集",
-    real: "URL_ADDRESS.baidu.com",
-  },
-  {
-    title: "第2集",
-    real: "URL_ADDRESS.baidu.com",
-  },
-  {
-    title: "第3集",
-    real: "URL_ADDRESS.baidu.com",
-  },
-  {
-    title: "第4集",
-    real: "URL_ADDRESS.baidu.com",
-  },
-  {
-    title: "第5集",
     real: "URL_ADDRESS.baidu.com",
   },
 ]);
@@ -354,12 +344,6 @@ const destroySortable = () => {
   }
 };
 
-// 拖拽结束事件处理
-const onDragEnd = async (evt) => {
-  console.log("拖拽排序完成", videoSources.value);
-  await PlayerList.updateVideoList(videoSources.value);
-};
-
 // Clean up when component is unmounted
 onMounted(async () => {
   clearTimers();
@@ -380,6 +364,17 @@ onUnmounted(() => {
   clearTimers();
   destroySortable();
 });
+// 处理视频删除
+const handleDeleteVideo = async (video, index) => {
+  // 从视频源列表中删除
+  videoSources.value.splice(index, 1);
+
+  // 如果删除的是当前播放的视频，且列表不为空，切换到第一个视频
+  if (video.real === currentVideo.value.real && videoSources.value.length > 0) {
+    await switchVideo(videoSources.value[0], 0);
+  }
+  await PlayerList.updateVideoList(videoSources.value);
+};
 </script>
 
 <style lang="less">
@@ -494,10 +489,10 @@ onUnmounted(() => {
     }
   }
 
-  .video-element {
-    width: 100%;
-    height: 100%;
-  }
+  // .video-element {
+  //   width: 100%;
+  //   height: 100%;
+  // }
 
   iframe {
     position: absolute;
@@ -513,7 +508,7 @@ onUnmounted(() => {
     height: calc(100% - 120px);
     right: 0;
     top: 50px;
-    width: 190px;
+    width: 160px;
     // background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(8px);
     opacity: 1;
@@ -633,6 +628,68 @@ onUnmounted(() => {
   iframe {
     width: 100%;
     height: 100%;
+  }
+}
+.episode-item {
+  padding: 12px 15px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative; // 添加相对定位
+  .title {
+    font-size: 12px;
+  }
+  &:hover {
+    background: rgba(255, 255, 255, 0.1); // 增加hover时的背景透明度
+  }
+
+  &.active {
+    background: rgba(64, 158, 255, 0.2); // 增加选中状态的背景透明度
+    color: #fff;
+    border-left: 3px solid #409eff; // 添加左侧边框标识
+    padding-left: 12px; // 调整左内边距以补偿边框宽度
+
+    .drag-handle {
+      color: #409eff; // 选中状态下图标颜色改为主题色
+    }
+
+    .title {
+      font-weight: 500; // 选中状态下文字加粗
+    }
+  }
+
+  .drag-handle {
+    cursor: move;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 16px;
+    transition: all 0.3s ease;
+    transform: rotateZ(90deg);
+    font-weight: 900;
+
+    &:hover {
+      color: #409eff; // 鼠标悬停在拖拽图标上时变为主题色
+    }
+  }
+  .delete-btn {
+    opacity: 0;
+    transition: opacity 0.3s;
+    margin-left: auto;
+    padding: 2px;
+
+    .el-icon {
+      font-size: 14px;
+    }
+  }
+
+  &:hover {
+    .delete-btn {
+      opacity: 1;
+    }
   }
 }
 </style>

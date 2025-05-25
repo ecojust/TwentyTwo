@@ -26,12 +26,12 @@
         </router-link> -->
         <router-link to="/setting" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><Setting /></el-icon>
-          <span>设置</span>
+          <span>我的</span>
         </router-link>
-        <router-link to="/about" class="navbar-item" active-class="active">
+        <!-- <router-link to="/about" class="navbar-item" active-class="active">
           <el-icon class="navbar-icon"><InfoFilled /></el-icon>
           <span>关于</span>
-        </router-link>
+        </router-link> -->
       </div>
     </div>
   </nav>

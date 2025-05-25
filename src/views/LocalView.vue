@@ -12,7 +12,7 @@
           <el-empty
             v-if="collection.length === 0"
             @click="addCollection"
-            description="暂无合集，点击添加"
+            description="该频道暂无合集..."
             :image-size="200"
           ></el-empty>
 
@@ -35,32 +35,18 @@
                 >
                   <div class="video-thumbnail">
                     <el-image
-                      :src="coll.coverUrl || '/placeholder.jpg'"
+                      :src="coll.thumb || '/placeholder.jpg'"
                       :alt="coll.title"
                       fit="contain"
                     ></el-image>
-                    <!-- 添加居中的播放图标 -->
                   </div>
                   <div class="video-info">
-                    <h3>{{ coll.title }} ({{ coll.video_urls.length }})</h3>
-                    <el-text class="video-path" truncated
-                      >{{ coll.id }}
+                    <h3>{{ coll.title }}({{ coll.items }}集)</h3>
+                    <el-text class="video-path" truncated>
                       <span class="author">
                         {{ coll.author }}
                       </span>
                     </el-text>
-                    <!-- <el-button
-                      class="copy-collection"
-                      @click.stop="exportCollection(coll)"
-                      >拷贝合集</el-button
-                    > -->
-                    <!-- <span></span> -->
-                    <el-button
-                      type="warning"
-                      class="copy-collection"
-                      @click.stop="deleteCollection(coll)"
-                      >删除合集</el-button
-                    >
                     <div class="video-actions"></div>
                   </div>
                 </el-card>
@@ -89,6 +75,7 @@
       </el-tabs>
     </el-card>
 
+    <!-- 其他对话框保持不变 -->
     <el-dialog
       class="player-dialog"
       :close-on-click-modal="false"
@@ -130,7 +117,7 @@
               </el-form-item>
 
               <el-form-item label="封面图">
-                <el-upload
+                <!-- <el-upload
                   class="cover-uploader"
                   action="#"
                   :auto-upload="false"
@@ -150,34 +137,8 @@
                     </div>
                   </div>
                   <el-icon v-else class="cover-uploader-icon"><Plus /></el-icon>
-                </el-upload>
-                <div class="cover-tip">默认会以合集内容自动生成封面</div>
-              </el-form-item>
-            </el-form>
-          </el-tab-pane>
-
-          <el-tab-pane label="从URL导入" name="url">
-            <el-form :model="urlImportForm" label-width="80px">
-              <el-form-item label="URL" required>
-                <el-input
-                  v-model="urlImportForm.url"
-                  placeholder="请输入合集URL"
-                  type="textarea"
-                  :rows="3"
-                ></el-input>
-              </el-form-item>
-            </el-form>
-          </el-tab-pane>
-
-          <el-tab-pane label="从JSON导入" name="json">
-            <el-form :model="jsonImportForm" label-width="80px">
-              <el-form-item label="URL" required>
-                <el-input
-                  v-model="jsonImportForm.json"
-                  placeholder="请输入合集URL"
-                  type="textarea"
-                  :rows="3"
-                ></el-input>
+                </el-upload> -->
+                <div class="cover-tip">暂无</div>
               </el-form-item>
             </el-form>
           </el-tab-pane>
@@ -189,56 +150,11 @@
           <el-button @click="showCollectionDialog = false">取消</el-button>
           <el-button
             type="primary"
-            @click="
-              collectionCreateMode === 'manual'
-                ? saveCollection()
-                : importCollection()
-            "
+            @click="saveCollection()"
             :loading="importing"
           >
-            {{ collectionCreateMode === "manual" ? "确定" : "导入" }}
+            确定
           </el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <el-dialog
-      v-model="showSelectCollectionDialog"
-      title="选择合集"
-      width="30%"
-      :close-on-click-modal="false"
-      class="select-collection-dialog"
-    >
-      <el-scrollbar wrap-style="height:300px">
-        <el-radio-group v-model="selectedCollection">
-          <div class="collection-select-list">
-            <el-radio
-              v-for="(coll, index) in collection"
-              :key="index"
-              :label="coll.id"
-              class="collection-select-item"
-            >
-              <div class="collection-select-content">
-                <el-image
-                  class="collection-thumbnail"
-                  :src="coll.coverUrl || '/placeholder.jpg'"
-                  fit="contain"
-                ></el-image>
-                <span class="collection-title">{{ coll.title }}</span>
-              </div>
-            </el-radio>
-          </div>
-        </el-radio-group>
-      </el-scrollbar>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showSelectCollectionDialog = false"
-            >取消</el-button
-          >
-          <el-button type="primary" @click="confirmAddToCollection"
-            >确定</el-button
-          >
         </span>
       </template>
     </el-dialog>
@@ -252,23 +168,13 @@
       :show-close="false"
     >
       <div class="title">
-        <el-input
-          v-model="currentCollection.title"
-          :class="{ editing: isTitleEditing }"
-          @focus="isTitleEditing = true"
-          @blur="handleTitleBlur"
-        ></el-input>
-        <el-button
-          v-if="isTitleEditing"
-          class="confirm-button"
-          type="success"
-          :icon="Check"
-          circle
-          @click="updateCollectionTitle"
-        />
+        {{ currentCollection.title }}
+        <el-icon class="add-item" @click="handleAddItem"
+          ><CirclePlusFilled
+        /></el-icon>
       </div>
       <el-empty
-        v-if="!currentCollection || currentCollection.video_urls.length === 0"
+        v-if="!currentCollection || currentCollection.zyhjnr.length === 0"
         description="该合集暂无视频"
         :image-size="200"
       ></el-empty>
@@ -279,7 +185,7 @@
       >
         <div
           class="video-item"
-          v-for="(video, index) in currentCollection.video_urls"
+          v-for="(video, index) in currentCollection.zyhjnr"
           :key="index"
           :xs="24"
           :sm="12"
@@ -307,19 +213,8 @@
             <div class="video-info">
               <h3>{{ video.title || "暂无" }}</h3>
               <!-- <span>{{ video.text }}</span> -->
-              <div class="video-actions">
-                <el-button
-                  @click.stop="
-                    removeFromCollection(video, currentCollection.id)
-                  "
-                  type="danger"
-                  size="small"
-                  plain
-                >
-                  移除
-                </el-button>
-              </div>
-              <div class="time">{{ video.time }}</div>
+              <div class="video-actions"></div>
+              <!-- <div class="time">{{ video.time }}</div> -->
             </div>
           </el-card>
         </div>
@@ -333,24 +228,87 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 添加资源对话框 -->
+    <el-dialog
+      v-model="addDialog"
+      title="新增资源"
+      width="500"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="addForm" label-width="150px">
+        <el-form-item label="标题" required>
+          <el-input
+            clearable
+            v-model="addForm.title"
+            placeholder="请输入资源标题"
+          ></el-input>
+        </el-form-item>
+
+        <el-form-item label="原始网站播放页" required>
+          <el-input
+            clearable
+            v-model="addForm.origin"
+            placeholder="请输入资源播放页网址"
+          ></el-input>
+        </el-form-item>
+
+        <el-form-item label="视频源地址(体验更佳)">
+          <el-input
+            clearable
+            v-model="addForm.real"
+            placeholder="请输入视频源地址，如果没有则留空"
+          ></el-input>
+        </el-form-item>
+
+        <el-form-item label="视频格式">
+          <el-select
+            v-model="addForm.type"
+            placeholder="请选择资源格式（如果不确定则留空）"
+            clearable
+          >
+            <el-option label="网页" value="iframe"></el-option>
+            <el-option label="mp4" value="mp4"></el-option>
+            <el-option label="m3u8" value="m3u8"></el-option>
+            <el-option label="flv" value="flv"></el-option>
+            <el-option label="avi" value="avi"></el-option>
+            <el-option label="wmv" value="wmv"></el-option>
+            <el-option label="mov" value="mov"></el-option>
+            <el-option label="ogg" value="ogg"></el-option>
+            <el-option label="mkv" value="mkv"></el-option>
+            <el-option label="mkv" value="mkv"></el-option>
+            <el-option label="ts" value="ts"></el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="addDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleAddConfirm">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated } from "vue";
-import { useRouter } from "vue-router";
-import { VideoPlay, Delete, Plus, Check } from "@element-plus/icons-vue"; // 添加 Delete 图标
+import { ref, onMounted, onActivated, nextTick } from "vue";
+import {
+  VideoPlay,
+  Delete,
+  Plus,
+  Check,
+  CirclePlusFilled,
+} from "@element-plus/icons-vue";
 import { ElMessageBox, ElMessage } from "element-plus";
-import History from "../tool/history";
 import Collection from "../tool/collection";
-import Generater from "../tool/generater";
-import Plugin from "../tool/plugin";
 import PlayerList from "../tool/playerList";
-
+import Channel from "../api/channel";
+import Config from "../tool/config";
 import VideoPlayer from "../components/VideoPlayer.vue";
 import { DEFAULT_COLLECTION_COVER } from "../const/const";
 
-const router = useRouter();
 const activeTab = ref("video");
 const showPlayer = ref(false);
 const currentVideo = ref({});
@@ -366,110 +324,61 @@ const selectedCollection = ref(null);
 const videoToAdd = ref(null);
 const showCollectionVideosDialog = ref(false);
 const currentCollection = ref(null);
-const history = ref([]);
 const collection = ref([]);
 const isTitleEditing = ref(false);
 const originalTitle = ref("");
+const collectionCreateMode = ref("manual");
+const importing = ref(false);
+const addDialog = ref(false);
+const addForm = ref({
+  title: "",
+  origin: "",
+  real: "",
+  type: "",
+});
+
+// 处理新增确认
+const handleAddConfirm = async () => {
+  if (!addForm.value.title || !addForm.value.origin) {
+    ElMessage.warning("请填写必填项");
+    return;
+  }
+
+  try {
+    // await PlayerList.pushVideo(addForm.value, currentCollection.value.id);
+    await Channel.pushItemToCollection(
+      addForm.value,
+      currentCollection.value.id
+    );
+
+    const data = await Channel.getCollectionDetails(currentCollection.value.id);
+    currentCollection.value = data;
+    nextTick();
+
+    addDialog.value = false;
+    // 重置表单
+    addForm.value = {
+      title: "",
+      origin: "",
+      real: "",
+      type: "",
+    };
+  } catch (error) {
+    ElMessage.error(error);
+  }
+};
+
+const handleAddItem = () => {
+  addDialog.value = true;
+};
 
 async function playVideo(video, type) {
   playMode.value = type;
   currentVideo.value = video;
   await PlayerList.pushVideo(video);
   showPlayer.value = true;
-  console.log("playVideo", video);
 }
 
-async function addToCollection(video) {
-  videoToAdd.value = video;
-  showSelectCollectionDialog.value = true;
-}
-
-async function confirmAddToCollection() {
-  if (!selectedCollection.value) {
-    ElMessage.warning("请选择一个合集");
-    return;
-  }
-  if (!videoToAdd.value) {
-    ElMessage.warning("没有要添加的视频");
-    return;
-  }
-
-  console.log("selectedCollection", selectedCollection.value);
-  console.log("videoToAdd", videoToAdd.value);
-  const collectionId = selectedCollection.value;
-  const video = videoToAdd.value;
-  const res = await Collection.pushVideo2Collection(collectionId, video);
-  if (!res.success) {
-    ElMessage.warning(res.message);
-  } else {
-    ElMessage.success("添加成功");
-  }
-  showSelectCollectionDialog.value = false;
-  collection.value = await Collection.getCollections();
-}
-
-const removeFromCollection = async (video, collectionId) => {
-  const res = await Collection.removeVideoFromCollection(collectionId, video);
-  collection.value = await Collection.getCollections();
-  const res2 = await Collection.getCollection(collectionId);
-  if (!res.success) {
-    ElMessage.warning(res.message);
-  } else {
-    currentCollection.value = res2.data;
-  }
-};
-// 添加合集函数
-// 在其他 ref 变量后添加
-const collectionCreateMode = ref("manual");
-const urlImportForm = ref({
-  url: "",
-});
-const jsonImportForm = ref({
-  json: "",
-});
-
-const importing = ref(false);
-
-const exportCollection = async (coll) => {
-  try {
-    const needToParse = Collection.checkCollectionIsReady(coll);
-    // if (needToParse.length > 0) {
-    //   ElMessage.warning(
-    //     `合集 ${coll.title} 中的 ${needToParse.length} 个视频未解析`
-    //   );
-    //   return;
-    // }
-
-    const collectionData = JSON.stringify(coll, null, 2);
-    await navigator.clipboard.writeText(collectionData);
-    ElMessage.success("合集数据已复制到剪贴板");
-  } catch (error) {
-    console.error("复制失败:", error);
-    ElMessage.error("复制失败，请重试");
-  }
-};
-// 添加导入方法
-const importCollection = async () => {
-  if (!jsonImportForm.value.json.trim()) {
-    ElMessage.warning("请输入合集数据");
-    return;
-  }
-
-  importing.value = true;
-  try {
-    // TODO: 实现从URL导入合集的逻辑
-    const result = await Collection.importFromData(jsonImportForm.value.json);
-    ElMessage.success("导入成功");
-    showCollectionDialog.value = false;
-    collection.value = await Collection.getCollections();
-  } catch (error) {
-    ElMessage.error("导入失败：" + error.message);
-  } finally {
-    importing.value = false;
-  }
-};
-
-// 修改 addCollection 函数
 function addCollection() {
   showCollectionDialog.value = true;
   collectionCreateMode.value = "manual";
@@ -478,46 +387,7 @@ function addCollection() {
     description: "",
     coverUrl: DEFAULT_COLLECTION_COVER,
   };
-  urlImportForm.value = {
-    url: "",
-  };
 }
-
-const deleteCollection = async (coll) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除合集 "${coll.title}" 吗？`, "警告", {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-      type: "warning",
-    })
-      .then(async () => {
-        const res = await Collection.deleteCollection(coll.id);
-        if (!res.success) {
-          ElMessage.warning(res.message);
-        } else {
-          ElMessage.success("删除成功");
-          collection.value = await Collection.getCollections();
-          showCollectionVideosDialog.value = false;
-        }
-      })
-      .catch(() => {
-        // ElMessage({
-        //   type: "info",
-        //   message: "Delete canceled",
-        // });
-      });
-  } catch {
-    // 用户点击取消按钮时，不执行任何操作
-  }
-};
-
-const generateCover = async (coll) => {
-  const thumbnails = coll.videos.map((video) => video.thumbnail);
-  const cover = await Generater.generateThumbnailCloud(thumbnails);
-  coll.coverUrl = cover;
-  await Collection.updateCollection(coll);
-  collection.value = await Collection.getCollections();
-};
 
 // 处理封面图片变更
 function handleCoverChange(file) {
@@ -527,10 +397,10 @@ function handleCoverChange(file) {
     return;
   }
 
-  // 限制文件大小为 2MB
+  // 限制文件大小为 5MB
   const isLt2M = file.size / 1024 / 1024 < 5;
   if (!isLt2M) {
-    ElMessage.error("图片大小不能超过 2MB!");
+    ElMessage.error("图片大小不能超过 5MB!");
     return;
   }
 
@@ -542,20 +412,11 @@ function handleCoverChange(file) {
   };
 }
 
-// 在 openCollection 函数中添加
-function openCollection(coll) {
-  currentCollection.value = coll;
-  originalTitle.value = coll.title; // 保存原始标题
+async function openCollection(coll) {
+  const data = await Channel.getCollectionDetails(coll.id);
+  currentCollection.value = data;
   showCollectionVideosDialog.value = true;
 }
-
-// 添加新的处理函数
-const handleTitleBlur = () => {
-  // 如果标题没有改变，直接退出编辑模式
-  if (currentCollection.value.title === originalTitle.value) {
-    isTitleEditing.value = false;
-  }
-};
 
 const updateCollectionTitle = async () => {
   if (!currentCollection.value.title.trim()) {
@@ -590,54 +451,47 @@ async function saveCollection() {
     ElMessage.warning("请输入合集名称");
     return;
   }
-
-  // 生成基于标题和当前时间的唯一ID
-  const timestamp = new Date().getTime();
-  const uniqueId = Generater.generateName(
-    `${collectionForm.value.title}-${timestamp}`
-  );
-
-  // 创建一个新合集
   const newCollection = {
-    id: uniqueId,
     title: collectionForm.value.title,
     description: collectionForm.value.description,
-    coverUrl: collectionForm.value.coverUrl,
-    videos: [],
+    coverUrl: "",
   };
-  await Collection.pushCollection(uniqueId, newCollection);
-  collection.value = await Collection.getCollections();
-
-  ElMessage({
-    message: `已创建合集: ${collectionForm.value.title}`,
-    type: "success",
-    duration: 2000,
-  });
-  showCollectionDialog.value = false;
+  const success = await Channel.addCollection(newCollection);
+  if (success) {
+    ElMessage({
+      message: res.msg,
+      type: "success",
+      duration: 2000,
+    });
+    getChannelCollections();
+    collectionForm.value = {
+      title: "",
+      description: "",
+      coverUrl: "",
+    };
+    showCollectionDialog.value = false;
+  }
 }
 
-const init = async () => {
-  await Plugin.setPlugin();
-  history.value = await History.getHistory();
-  collection.value = await Collection.getCollections();
-  console.log("history", history.value);
-  console.log("collection", collection.value);
-  const autoPlay = router.currentRoute.value.query.autoPlay;
-  if (autoPlay) {
-    activeTab.value = "history";
-    playVideo(history.value[0], "history");
-    router.replace({ query: {} });
+const getChannelCollections = async (channelId) => {
+  if (!channelId) {
+    const config = await Config.getConfiguration();
+    channelId = config.channel;
+  }
+  const res = await Channel.getChannelCollections(channelId);
+  if (res) {
+    collection.value = res;
+  } else {
+    collection.value = [];
   }
 };
 
 onActivated(async () => {
-  await init();
+  await getChannelCollections();
 });
 
 onMounted(async () => {
-  // await Collection.clearCollections();
-  // await History.clearHistory();
-  await init();
+  await getChannelCollections();
 });
 </script>
 
@@ -857,10 +711,19 @@ onMounted(async () => {
 
 .collection-videos-dialog {
   .title {
-    // display: flex;
-    // align-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     margin-bottom: 20px;
-
+    font-size: 28px;
+    .add-item {
+      // font-size: 28px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .add-item:hover {
+      color: var(--el-color-primary);
+    }
     .el-input {
       // flex: 1;
       margin: 0px 10px;

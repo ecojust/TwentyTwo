@@ -8,6 +8,16 @@ export const PLUGIN_FOLDER_NAME = "plugins";
 export const DRAFT_PLUGIN_FILE = "draft_plugin.js";
 export const PLUGIN_USAGE_FILE = "plugin_usage.json";
 
+export const RESPONSE_CODE = {
+  200: "",
+  401: "Unauthorized",
+  403: "Forbidden",
+  404: "Not Found",
+  405: "Method Not Allowed",
+  500: "Internal Server Error",
+  50001: "数据已存在",
+};
+
 export const SYSTEM_THEMES = [
   {
     name: "Default",
