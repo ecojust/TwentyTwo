@@ -54,6 +54,24 @@ export default class Channel {
     }
   }
 
+  static async pushItemsToCollection(
+    rawItems: string,
+    collectionId: string | undefined,
+    force: boolean
+  ) {
+    const res = await Fetch.post(`pushItemsToResource&id=${collectionId}`, {
+      rawItems: rawItems,
+      force: force,
+    });
+    if (res.code === 200) {
+      ElMessage.success(res.msg);
+      return res.data.data;
+    } else {
+      ElMessage.warning(res.msg);
+      return [];
+    }
+  }
+
   static async addCollection(collectionForm: {
     title: string;
     description: string;

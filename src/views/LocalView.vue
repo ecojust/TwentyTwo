@@ -238,54 +238,75 @@
     <el-dialog
       v-model="addDialog"
       title="新增资源"
-      width="500"
+      width="80%"
       :close-on-click-modal="false"
     >
-      <el-form :model="addForm" label-width="150px">
-        <el-form-item label="标题">
-          <el-input
-            clearable
-            v-model="addForm.title"
-            placeholder="请输入资源标题"
-          ></el-input>
-        </el-form-item>
+      <div class="add-resource-content">
+        <el-tabs v-model="addMode" class="demo-tabs">
+          <el-tab-pane label="单条新增" name="one">
+            <el-form :model="addForm" label-width="150px">
+              <el-form-item label="标题">
+                <el-input
+                  clearable
+                  v-model="addForm.title"
+                  placeholder="请输入资源标题"
+                ></el-input>
+              </el-form-item>
 
-        <el-form-item label="原始网站播放页" required>
-          <el-input
-            clearable
-            v-model="addForm.origin"
-            placeholder="请输入资源播放页网址"
-          ></el-input>
-        </el-form-item>
+              <el-form-item label="原始网站播放页" required>
+                <el-input
+                  clearable
+                  v-model="addForm.origin"
+                  placeholder="请输入资源播放页网址"
+                ></el-input>
+              </el-form-item>
 
-        <el-form-item label="视频源地址(体验更佳)">
-          <el-input
-            clearable
-            v-model="addForm.real"
-            placeholder="请输入视频源地址，如果没有则留空"
-          ></el-input>
-        </el-form-item>
+              <el-form-item label="视频源地址(体验更佳)">
+                <el-input
+                  clearable
+                  v-model="addForm.real"
+                  placeholder="请输入视频源地址，如果没有则留空"
+                ></el-input>
+              </el-form-item>
 
-        <el-form-item label="视频格式">
-          <el-select
-            v-model="addForm.type"
-            placeholder="请选择资源格式（如果不确定则留空）"
-            clearable
-          >
-            <el-option label="网页" value="iframe"></el-option>
-            <el-option label="mp4" value="mp4"></el-option>
-            <el-option label="m3u8" value="m3u8"></el-option>
-            <el-option label="flv" value="flv"></el-option>
-            <el-option label="avi" value="avi"></el-option>
-            <el-option label="wmv" value="wmv"></el-option>
-            <el-option label="mov" value="mov"></el-option>
-            <el-option label="ogg" value="ogg"></el-option>
-            <el-option label="mkv" value="mkv"></el-option>
-            <el-option label="mkv" value="mkv"></el-option>
-            <el-option label="ts" value="ts"></el-option>
-          </el-select>
-        </el-form-item>
-      </el-form>
+              <el-form-item label="视频格式">
+                <el-select
+                  v-model="addForm.type"
+                  placeholder="请选择资源格式（如果不确定则留空）"
+                  clearable
+                >
+                  <el-option label="网页" value="iframe"></el-option>
+                  <el-option label="mp4" value="mp4"></el-option>
+                  <el-option label="m3u8" value="m3u8"></el-option>
+                  <el-option label="flv" value="flv"></el-option>
+                  <el-option label="avi" value="avi"></el-option>
+                  <el-option label="wmv" value="wmv"></el-option>
+                  <el-option label="mov" value="mov"></el-option>
+                  <el-option label="ogg" value="ogg"></el-option>
+                  <el-option label="mkv" value="mkv"></el-option>
+                  <el-option label="mkv" value="mkv"></el-option>
+                  <el-option label="ts" value="ts"></el-option>
+                </el-select>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+          <el-tab-pane label="批量新增" name="batch">
+            <el-form-item label="批量项目">
+              <el-input
+                type="textarea"
+                placeholder="此项数据可以通过官方插件复制而得"
+                v-model="rawItems"
+                :rows="8"
+              >
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="是否用此数据强制覆盖原本内容">
+              <el-switch v-model="force"></el-switch>
+            </el-form-item>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
 
       <template #footer>
         <span class="dialog-footer">
@@ -336,6 +357,8 @@ const collectionCreateMode = ref("manual");
 const importing = ref(false);
 const addDialog = ref(false);
 const isadding = ref(false);
+const addMode = ref("one");
+const force = ref(false);
 
 const addForm = ref({
   title: "",
@@ -344,37 +367,47 @@ const addForm = ref({
   type: "",
 });
 
+const rawItems = ref("");
+
 const add2list = async () => {
   await PlayerList.pushVideo(currentCollection.value.zyhjnr);
 };
 
 // 处理新增确认
 const handleAddConfirm = async () => {
-  if (!addForm.value.title || !addForm.value.origin) {
-    ElMessage.warning("请填写必填项");
-    return;
-  }
-
   try {
+    if (addMode.value === "one") {
+      if (!addForm.value.title || !addForm.value.origin) {
+        ElMessage.warning("请填写必填项");
+        return;
+      }
+      await Channel.pushItemToCollection(
+        addForm.value,
+        currentCollection.value.id
+      );
+      // 重置表单
+      addForm.value = {
+        title: "",
+        origin: "",
+        real: "",
+        type: "",
+      };
+    }
+
+    if (addMode.value === "batch") {
+      await Channel.pushItemsToCollection(
+        rawItems.value,
+        currentCollection.value.id,
+        force.value
+      );
+      rawItems.value = "";
+    }
     // await PlayerList.pushVideo(addForm.value, currentCollection.value.id);
-    await Channel.pushItemToCollection(
-      addForm.value,
-      currentCollection.value.id
-    );
 
     const data = await Channel.getCollectionDetails(currentCollection.value.id);
     currentCollection.value = data;
     nextTick();
-
     addDialog.value = false;
-
-    // 重置表单
-    addForm.value = {
-      title: "",
-      origin: "",
-      real: "",
-      type: "",
-    };
   } catch (error) {
     ElMessage.error(error);
   }
@@ -768,5 +801,9 @@ onMounted(async () => {
     align-self: flex-start;
     margin-top: 20px;
   }
+}
+
+.add-resource-content {
+  height: 300px;
 }
 </style>
