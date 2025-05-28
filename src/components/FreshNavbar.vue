@@ -87,9 +87,19 @@ const messagelist = ref([]);
 const isNew = ref(0);
 const showMessage = ref(false);
 
-onMounted(async () => {
+const timer = null;
+
+const getNotifyList = async () => {
   messagelist.value = await App.getNotifyList();
   isNew.value = messagelist.value.filter((item) => item.active == 1).length;
+};
+
+onMounted(async () => {
+  getNotifyList();
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    await getNotifyList();
+  }, 10000);
 });
 </script>
 
