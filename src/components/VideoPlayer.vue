@@ -123,6 +123,11 @@ const props = defineProps({
     required: false,
     default: "video-player",
   },
+  defaultCurrent: {
+    type: Object,
+    required: false,
+    default: {},
+  },
 });
 
 const videoSources = ref([]);
@@ -196,9 +201,9 @@ const handleClose = () => {
 const switchVideo = async (video, index) => {
   currentVideo.value = video;
 
-  if (listRef.value) {
-    listRef.value.scrollTop = Math.max(index - 7, 0) * 44;
-  }
+  // if (listRef.value) {
+  //   listRef.value.scrollTop = Math.max(index - 7, 0) * 44;
+  // }
 
   console.log("切换视频成功");
   const bool = await Player.waitForElement(`#${props.id}`, 10000);
@@ -364,8 +369,13 @@ onMounted(async () => {
   clearTimers();
   handleMouseMove();
   videoSources.value = await PlayerList.getDeduplicatedVideoList();
-  if (videoSources.value[0]) {
-    await switchVideo(videoSources.value[0]);
+
+  if (props.defaultCurrent?.real) {
+    await switchVideo(props.defaultCurrent);
+  } else {
+    if (videoSources.value[0]) {
+      await switchVideo(videoSources.value[0]);
+    }
   }
 
   console.log("videoSources.value", videoSources.value);

@@ -86,7 +86,7 @@
     >
       <VideoPlayer
         v-if="showPlayer"
-        :current-video="currentVideo"
+        :default-current="currentVideo"
         @on-close="showPlayer = false"
       ></VideoPlayer>
     </el-dialog>
@@ -201,17 +201,15 @@
             class="video-card"
             :body-style="{ padding: '0px' }"
             shadow="hover"
+            @click="playVideo(video, 'collection')"
           >
-            <div class="video-thumbnail">
+            <div class="resource-item">
               <!-- <el-image
                 :src="video.thumbnail || '/placeholder.jpg'"
                 :alt="video.title"
                 fit="contain"
               ></el-image> -->
-              <div
-                class="play-icon-overlay"
-                @click="playVideo(video, 'collection')"
-              >
+              <div class="play-icon-overlay">
                 <el-icon class="play-icon"><VideoPlay /></el-icon>
               </div>
             </div>
@@ -611,6 +609,15 @@ onMounted(async () => {
           color: white;
         }
       }
+    }
+    .resource-item {
+      //
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f5f5f5;
+      position: relative;
+      overflow: hidden;
     }
 
     .video-info {
