@@ -19,6 +19,24 @@
           <el-row v-else :gutter="20">
             <el-scrollbar wrap-style="height:calc(100vh - 260px);width:100%;">
               <div
+                class="collection-item-add"
+                :xs="24"
+                :sm="12"
+                :md="8"
+                :lg="6"
+              >
+                <el-card
+                  class="video-card add-collection-card"
+                  :body-style="{ padding: '0px' }"
+                  shadow="hover"
+                  @click="addCollection"
+                >
+                  <div class="video-thumbnail add-collection-thumbnail">
+                    <el-icon class="add-icon"><Plus /></el-icon>
+                  </div>
+                </el-card>
+              </div>
+              <div
                 class="collection-item"
                 v-for="(coll, index) in collection"
                 :key="index"
@@ -48,24 +66,6 @@
                       </span>
                     </el-text>
                     <div class="video-actions"></div>
-                  </div>
-                </el-card>
-              </div>
-              <div
-                class="collection-item-add"
-                :xs="24"
-                :sm="12"
-                :md="8"
-                :lg="6"
-              >
-                <el-card
-                  class="video-card add-collection-card"
-                  :body-style="{ padding: '0px' }"
-                  shadow="hover"
-                  @click="addCollection"
-                >
-                  <div class="video-thumbnail add-collection-thumbnail">
-                    <el-icon class="add-icon"><Plus /></el-icon>
                   </div>
                 </el-card>
               </div>
