@@ -5,6 +5,30 @@ import { ElMessage } from "element-plus";
 // import { get } from "./axios";
 
 export default class Channel {
+  static async pushwork(channel: string, data: any) {
+    if (!channel) {
+      return null;
+    }
+    const res = await Fetch.post(`pushwork&code=${channel}`, data);
+    if (res.code === 200) {
+      ElMessage.success(res.msg);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  static async getWorkList(channel: string | undefined) {
+    if (!channel) {
+      return null;
+    }
+    const res = await Fetch.get(`getWorkList&code=${channel}`);
+    if (res.code === 200) {
+      return res.data.data;
+    } else {
+      return [];
+    }
+  }
   static async getChannelDetail(channel: string | undefined) {
     if (!channel) {
       return null;

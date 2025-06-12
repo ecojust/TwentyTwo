@@ -87,7 +87,7 @@ const messagelist = ref([]);
 const isNew = ref(0);
 const showMessage = ref(false);
 
-const timer = null;
+let timer = null;
 
 const getNotifyList = async () => {
   messagelist.value = await App.getNotifyList();

@@ -139,6 +139,11 @@ const saveChannel = async () => {
   showAddChannelDialog.value = false; // Corrected assignment
 };
 
+const getWorkList = async (channelId) => {
+  const worklist = await Channel.getWorkList(channelId);
+  console.log("worklist", worklist);
+};
+
 const getChannelDetail = async (channelId, notify) => {
   const channel = await Channel.getChannelDetail(channelId);
   if (channel) {
@@ -165,8 +170,10 @@ const getChannelDetail = async (channelId, notify) => {
 onMounted(async () => {
   // 在这里可以加载用户已保存的主题设置
   const config = await Config.getConfiguration();
+  console.log("config", config);
   currentTheme.value = config.theme;
   await getChannelDetail(config.channel);
+  // await getWorkList(config.channel);
 
   try {
     // 从 Tauri 应用获取版本信息

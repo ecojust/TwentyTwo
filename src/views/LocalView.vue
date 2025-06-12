@@ -313,6 +313,72 @@
         </span>
       </template>
     </el-dialog>
+
+    <div :class="['drawer', showWorklistDrawer ? '' : 'drawer-hide']">
+      <div class="title">(频)道友想看的</div>
+      <el-empty v-if="worklist.length === 0" description="暂无工单"></el-empty>
+
+      <div v-else>
+        <el-scrollbar :wrap-style="{ height: 'calc(100vh - 180px)' }">
+          <div v-for="(item, idx) in worklist" :key="idx" class="work-item">
+            <el-card>
+              <template #header>
+                <div class="view-header">
+                  <h2>{{ item.title }}</h2>
+                </div>
+              </template>
+
+              <p>{{ item.description }}</p>
+              <p>{{ new Date(item.updatetime * 1000).toLocaleString() }}</p>
+
+              <el-tag :type="item.yijiejue == 1 ? 'success' : 'warning'">{{
+                item.yijiejue == 0 ? "待解决" : "已解决"
+              }}</el-tag>
+            </el-card>
+          </div>
+        </el-scrollbar>
+      </div>
+
+      <div class="footer">
+        <el-button type="primary" @click="requestwork">我想找</el-button>
+      </div>
+
+      <el-tag
+        class="kkk"
+        type="success"
+        @click="
+          () => {
+            showWorklistDrawer = !showWorklistDrawer;
+          }
+        "
+      >
+      </el-tag>
+    </div>
+
+    <!-- 新建工单对话框 -->
+    <el-dialog v-model="showRequestWorkDialog" title="新建工单" width="400px">
+      <el-form :model="requestWorkForm" label-width="80px">
+        <el-form-item label="标题" required>
+          <el-input
+            v-model="requestWorkForm.subject"
+            placeholder="请输入需求标题"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="描述" required>
+          <el-input
+            type="textarea"
+            v-model="requestWorkForm.description"
+            placeholder="请填写详细描述"
+          ></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showRequestWorkDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleRequestWorkConfirm"
+          >确认</el-button
+        >
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -357,6 +423,13 @@ const addDialog = ref(false);
 const isadding = ref(false);
 const addMode = ref("one");
 const force = ref(false);
+const showWorklistDrawer = ref(false);
+const showRequestWorkDialog = ref(false);
+
+const requestWorkForm = ref({
+  subject: "",
+  description: "",
+});
 
 const addForm = ref({
   title: "",
@@ -366,6 +439,20 @@ const addForm = ref({
 });
 
 const rawItems = ref("");
+
+const requestwork = () => {
+  showRequestWorkDialog.value = true;
+};
+
+const handleRequestWorkConfirm = async () => {
+  if (requestWorkForm.value.description && requestWorkForm.value.subject) {
+    const config = await Config.getConfiguration();
+    await Channel.pushwork(config.channel, requestWorkForm.value);
+    showRequestWorkDialog.value = false;
+    requestWorkForm.value = { subject: "", description: "" };
+    await getWorkList();
+  }
+};
 
 const add2list = async () => {
   await PlayerList.pushVideo(currentCollection.value.zyhjnr);
@@ -527,12 +614,25 @@ const getChannelCollections = async (channelId) => {
   }
 };
 
+const worklist = ref([]);
+
+const getWorkList = async (channelId) => {
+  if (!channelId) {
+    const config = await Config.getConfiguration();
+    channelId = config.channel;
+  }
+  worklist.value = await Channel.getWorkList(channelId);
+  // console.log("worklist", worklist);
+};
+
 onActivated(async () => {
   await getChannelCollections();
+  await getWorkList();
 });
 
 onMounted(async () => {
   await getChannelCollections();
+  await getWorkList();
 });
 </script>
 
@@ -756,6 +856,45 @@ onMounted(async () => {
         }
       }
     }
+  }
+
+  .drawer {
+    box-shadow: var(--fresh-shadow, 0 4px 20px rgba(0, 0, 0, 0.08));
+
+    position: absolute;
+    right: -272px;
+    top: 0;
+    width: 240px;
+    z-index: 999;
+    height: calc(100% - 32px);
+    background: #f0eded;
+    transition: all 0.3s;
+    padding: 16px;
+    .kkk {
+      position: absolute;
+      left: -17px;
+      height: 48px;
+      transform: translateY(-50%);
+      top: 50%;
+      cursor: pointer;
+      z-index: -1;
+    }
+    .title {
+      text-align: center;
+      padding: 20px;
+    }
+    .work-item {
+      .el-card {
+        margin-bottom: 20px;
+      }
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+    }
+  }
+  .drawer-hide {
+    right: 0;
   }
 }
 
