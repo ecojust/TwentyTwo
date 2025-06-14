@@ -63,13 +63,13 @@ export default class Channel {
 
   static async getChannelCollections(channelcode: string | undefined) {
     if (!channelcode) {
-      return null;
+      return [];
     }
     const res = await Fetch.get(`getChannelResources&code=${channelcode}`);
     if (res.code === 200) {
       return res.data.data;
     } else {
-      return null;
+      return [];
     }
   }
 
