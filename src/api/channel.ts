@@ -40,7 +40,7 @@ export default class Channel {
 
   static async getWorkList(channel: string | undefined) {
     if (!channel) {
-      return null;
+      return [];
     }
     const res = await Fetch.get(`getWorkList&code=${channel}`);
     if (res.code === 200) {

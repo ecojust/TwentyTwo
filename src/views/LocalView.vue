@@ -708,6 +708,7 @@ onMounted(async () => {
 
 <style lang="less">
 .local-view {
+  background: red !important;
   @keyframes gzh-animate {
     0% {
       transform: rotateZ(0deg);

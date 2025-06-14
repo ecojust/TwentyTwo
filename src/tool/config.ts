@@ -14,6 +14,7 @@ export default class Config {
       JSON.stringify({
         theme: "Default",
         active_plugin: "",
+        channel: "",
       })
     );
     if (res?.success) {
