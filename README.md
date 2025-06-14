@@ -1,12 +1,12 @@
 <p align="center">
   <img width="220px" height="220px" src="preview/logo.png" />
 </p>
-<p align="center">一款视频搜索、播放和管理工具</p>
+<p align="center">一款互助视频搜索、播放工具</p>
 
 ## 📝 项目介绍
 
-TwentyTwo 是一款基于 Tauri,Vue3,Typescript 的跨平台视频搜索、播放和管理工具。
-用户可以通过插件搜索和播放各种视频，同时支持创建和管理自己的插件和视频合集。
+TwentyTwo 是一款基于 Tauri,Vue3,Typescript 的跨平台互助视频搜索、播放工具。
+用户可以通过插件搜索公开于互联网的视频，并存储至自己的的私有频道内，共享给他人。
 
 ## 🛠️ 技术栈
 
@@ -17,37 +17,9 @@ TwentyTwo 是一款基于 Tauri,Vue3,Typescript 的跨平台视频搜索、播�
 
 ## 🖼️ 项目预览
 
-<img src="./preview/search.png" width="90%" style="margin:10px 5%" alt="搜索" />
-<img src="./preview/history.png" width="90%" style="margin:10px 5%" alt="历史" />
-<img src="./preview/collection.png" width="90%" style="margin:10px 5%" alt="合集" />
-<img src="./preview/movie.png" width="90%" style="margin:10px 5%" alt="播放" />
-
-## ✨ 功能列表
-
-| 功能分类          | 功能描述             | 状态      |
-| ----------------- | -------------------- | --------- |
-| 🔍 **视频搜索**   | 根据插件搜索视频     | ✅ 已完成 |
-|                   | 视频源地址解析       | ✅ 已完成 |
-| 📜 **历史记录**   | 历史记录列表         | ✅ 已完成 |
-|                   | 添加历史记录到合集   | ✅ 已完成 |
-| 📒**我的合集**    | 新建合集             | ✅ 已完成 |
-|                   | 从 URL 导入合集      | ✅ 已完成 |
-|                   | 合集分享             | ✅ 已完成 |
-|                   | 合集封面自动生成     | 🚧 进行中 |
-| 📽️ **视频播放**   | iframe 视频源播放    | ✅ 已完成 |
-|                   | 媒体类型视频源播放   | ✅ 已完成 |
-|                   | 电影播放             | ✅ 已完成 |
-|                   | 连续剧播放           | ✅ 已完成 |
-| 👥 **插件开发**   | 从 URL 导入插件      | ✅ 已完成 |
-|                   | 插件调试与开发       | ✅ 已完成 |
-|                   | 插件启用与删除       | ✅ 已完成 |
-|                   | 插件本地使用次数显示 | ✅ 已完成 |
-| 🎨 **UI 界面**    | 现代化界面设计       | ✅ 已完成 |
-|                   | 主题切换             | ✅ 已完成 |
-|                   | 导入主题             | 🚧 进行中 |
-|                   | 主题调试与开发       | ✅ 已完成 |
-| 🛠️ **系统功能**   | 检查更新             | 🚧 进行中 |
-| 🌐 **跨平台支持** | windows/macOS/linux  | ✅ 已完成 |
+<img src="./preview/2.png" width="90%" style="margin:10px 5%" alt="合集" />
+<img src="./preview/3.png" width="90%" style="margin:10px 5%" alt="创建频道" />
+<img src="./preview/4.png" width="90%" style="margin:10px 5%" alt="消息通知" />
 
 ## ⚖️ 免责声明
 
