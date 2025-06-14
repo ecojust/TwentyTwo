@@ -1,10 +1,22 @@
 export const CONFIG_FILE_NAME = "settings.json";
+export const PLAYER_LIST_FILE_NAME = "player_list.json";
+
 export const HISTORY_FILE_NAME = "history.json";
 export const COLLECTION_FOLDER_NAME = "collections";
 export const THEMES_FOLDER_NAME = "themes";
 export const PLUGIN_FOLDER_NAME = "plugins";
 export const DRAFT_PLUGIN_FILE = "draft_plugin.js";
 export const PLUGIN_USAGE_FILE = "plugin_usage.json";
+
+export const RESPONSE_CODE = {
+  200: "",
+  401: "Unauthorized",
+  403: "Forbidden",
+  404: "Not Found",
+  405: "Method Not Allowed",
+  500: "Internal Server Error",
+  50001: "数据已存在",
+};
 
 export const SYSTEM_THEMES = [
   {
@@ -20,7 +32,7 @@ export const SYSTEM_THEMES = [
       .app-container {
         /* background: #c77f7f; */
         background-image: url("https://img.xjh.me/random_img.php?ctype=nature&type=bg&return=302&r=1746024544585&y=1");
-        background-size:contain;
+        background-size:cover;
       }
       .fresh-navbar {
         /* background-color: #7e3232 !important; */

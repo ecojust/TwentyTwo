@@ -7,32 +7,37 @@
     <div class="player-header" :class="{ 'controls-hidden': controlsHidden }">
       <div class="tv-style-title">{{ videoTitle }}</div>
 
-      <span class="label">{{ currentVideo.real }}</span>
+      <span class="label">{{ playUrl }}</span>
 
-      <span class="label">视频剩余时间(s):{{ leftEndingTime.toFixed(2) }}</span>
+      <span v-show="computedVideoType !== 'iframe'">
+        <span class="label"
+          >视频剩余时间(s):{{ leftEndingTime.toFixed(2) }}</span
+        >
 
-      <span class="label">片头片尾跳过时间(s):</span>
+        <span class="label">片头片尾跳过时间(s):</span>
 
-      <el-input-number
-        class="skip-ending-setting"
-        v-model="skipStartTime"
-        :min="0"
-        :max="300"
-        :step="10"
-        size="small"
-        controls-position="right"
-        placeholder="设置片尾跳过时间(秒)"
-      />
-      <el-input-number
-        class="skip-ending-setting"
-        v-model="skipEndingTime"
-        :min="0"
-        :max="300"
-        :step="10"
-        size="small"
-        controls-position="right"
-        placeholder="设置片尾跳过时间(秒)"
-      />
+        <el-input-number
+          class="skip-ending-setting"
+          v-model="skipStartTime"
+          :min="0"
+          :max="300"
+          :step="10"
+          size="small"
+          controls-position="right"
+          placeholder="设置片尾跳过时间(秒)"
+        />
+        <el-input-number
+          class="skip-ending-setting"
+          v-model="skipEndingTime"
+          :min="0"
+          :max="300"
+          :step="10"
+          size="small"
+          controls-position="right"
+          placeholder="设置片尾跳过时间(秒)"
+        />
+      </span>
+
       <el-button
         class="player-header-close"
         type="primary"
@@ -45,7 +50,7 @@
 
     <iframe
       v-if="computedVideoType == 'iframe'"
-      :src="currentVideo.real"
+      :src="playUrl"
       frameborder="0"
     ></iframe>
 
@@ -59,7 +64,7 @@
       @timeupdate="updateProgress"
       @loadedmetadata="videoLoaded"
     >
-      <source :src="currentVideo.real" :type="computedVideoType" />
+      <source :src="playUrl" :type="computedVideoType" />
       您的浏览器不支持 HTML5 视频播放。
     </video>
 
@@ -67,15 +72,26 @@
     <div class="episode-list" :class="{ 'controls-hidden': controlsHidden }">
       <div class="episode-list-header">剧集列表</div>
       <div class="episode-list-content" ref="listRef">
-        <div
-          v-for="(source, index) in videoSources"
-          :key="index"
-          class="episode-item"
-          :class="{ active: source.real === currentVideo.real }"
-          @click="switchVideo(source, index)"
-        >
-          <span>第 {{ index + 1 }} 集</span>
-          <el-icon v-if="source.real" class="check-icon"><Check /></el-icon>
+        <div ref="sortableContainer">
+          <div
+            v-for="(source, index) in videoSources"
+            :key="index"
+            class="episode-item"
+            :class="{ active: source.real === currentVideo.real }"
+            @click="switchVideo(source, index)"
+            :data-id="index"
+          >
+            <span class="drag-handle"> ... </span>
+            <span class="title">{{ source.title }}</span>
+            <el-button
+              class="delete-btn"
+              type="danger"
+              size="small"
+              @click.stop="handleDeleteVideo(source, index)"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -95,49 +111,59 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from "vue";
-import { Close, Check } from "@element-plus/icons-vue";
-import Plugin from "../tool/plugin";
+import { Close, Delete, More } from "@element-plus/icons-vue";
 import Player from "../tool/player";
-
-// import { IVideo } from "../const/interface";
+import PlayerList from "../tool/playerList";
+import Sortable from "sortable-dnd";
 
 const emit = defineEmits(["on-close", "on-update"]);
 const props = defineProps({
-  video: {
-    type: Object,
-    required: true,
-    default: {
-      origin: "",
-      real: "-1",
-    },
-  },
   id: {
     type: String,
     required: false,
     default: "video-player",
   },
+  defaultCurrent: {
+    type: Object,
+    required: false,
+    default: {},
+  },
 });
 
 const videoSources = ref([]);
+const videoSources2 = ref([
+  {
+    title: "第1集",
+    real: "URL_ADDRESS.baidu.com",
+  },
+]);
 
-const currentVideo = ref({
-  origin: "",
-  real: "-1",
-});
-
+const currentVideo = ref({});
+const sortableContainer = ref(null);
+let sortableInstance = null;
 const videoTitle = computed(() => {
-  return props.video.title;
+  return currentVideo.value?.title;
 });
 
 const videoType = computed(() => {
-  return props.video.type;
+  return currentVideo.value?.type;
+});
+
+const playUrl = computed(() => {
+  return currentVideo.value?.real || currentVideo.value?.origin;
 });
 
 // 根据视频URL自动分析视频类型
 const computedVideoType = computed(() => {
+  const real = currentVideo.value?.real;
+  const origin = currentVideo.value?.origin;
+
+  const testurl = real || origin;
+
+  if (!testurl) return "";
   const extension =
     videoType.value?.toLowerCase() ||
-    currentVideo.value.real.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
+    testurl.toLowerCase().split(".").pop().split("?")[0]; // 处理可能的查询参数
 
   // 根据扩展名映射到MIME类型
   const mimeTypes = {
@@ -173,23 +199,11 @@ const handleClose = () => {
 
 // 切换视频
 const switchVideo = async (video, index) => {
-  if (!video.real) {
-    const res = await Plugin.parseVideoUrl(video.origin);
-    currentVideo.value = res[0];
-    videoSources.value.splice(
-      videoSources.value.findIndex((s) => s.origin == video.origin),
-      1,
-      res[0]
-    );
+  currentVideo.value = video;
 
-    emit("on-update", videoSources.value);
-  } else {
-    currentVideo.value = video;
-  }
-
-  if (listRef.value) {
-    listRef.value.scrollTop = Math.max(index - 7, 0) * 44;
-  }
+  // if (listRef.value) {
+  //   listRef.value.scrollTop = Math.max(index - 7, 0) * 44;
+  // }
 
   console.log("切换视频成功");
   const bool = await Player.waitForElement(`#${props.id}`, 10000);
@@ -225,6 +239,9 @@ const startEndingProcess = ref(false);
 
 // 更新视频进度时检查是否需要跳过片尾
 const updateProgress = () => {
+  if (!(computedVideoType.value && computedVideoType.value !== "iframe")) {
+    return;
+  }
   if (!videoRef.value || !skipEndingTime.value) return;
   leftEndingTime.value = videoRef.value.duration - videoRef.value.currentTime;
   // 直接使用 showNextEpisodeHint 来检查状态
@@ -291,7 +308,7 @@ const handleMouseMove = () => {
   if (computedVideoType.value == "iframe") return;
   hideControlsTimer = setTimeout(() => {
     controlsHidden.value = true;
-  }, 3000);
+  }, 10000);
 };
 
 // 清除定时器
@@ -311,20 +328,80 @@ const clearTimers = () => {
     countDownTimer = null;
   }
 };
+
+// 初始化可排序列表
+const initSortable = () => {
+  if (!sortableContainer.value) return;
+
+  sortableInstance = new Sortable(sortableContainer.value, {
+    animation: 0,
+    handle: ".drag-handle", // 添加拖拽手柄
+    onDrop: async (evt) => {
+      const { oldIndex, newIndex } = evt;
+      if (oldIndex !== newIndex) {
+        const newArray = [...videoSources.value];
+        const movedItem = newArray[oldIndex];
+        newArray.splice(oldIndex, 1);
+        newArray.splice(newIndex, 0, movedItem);
+
+        // 强制更新视图
+        videoSources.value = [];
+        await nextTick();
+        videoSources.value = newArray;
+
+        await PlayerList.updateVideoList(videoSources.value);
+        await nextTick();
+      }
+    },
+  });
+};
+
+// 清除Sortable实例
+const destroySortable = () => {
+  if (sortableInstance) {
+    sortableInstance.destroy();
+    sortableInstance = null;
+  }
+};
+
 // Clean up when component is unmounted
 onMounted(async () => {
   clearTimers();
   handleMouseMove();
-  videoSources.value = [...(props.video.video_urls || [])];
-  if (videoSources.value[0]) {
-    await switchVideo(videoSources.value[0], 0);
+  videoSources.value = await PlayerList.getDeduplicatedVideoList();
+
+  if (props.defaultCurrent?.real) {
+    await switchVideo(props.defaultCurrent);
+  } else {
+    if (videoSources.value[0]) {
+      await switchVideo(videoSources.value[0]);
+    }
   }
+
+  console.log("videoSources.value", videoSources.value);
+
+  // 等待DOM更新后初始化Sortable
+  nextTick(() => {
+    initSortable();
+  });
 });
 
 // 组件卸载时清除定时器
 onUnmounted(() => {
   clearTimers();
+  destroySortable();
 });
+// 处理视频删除
+const handleDeleteVideo = async (video, index) => {
+  // 从视频源列表中删除
+  videoSources.value.splice(index, 1);
+
+  // 如果删除的是当前播放的视频，且列表不为空，切换到第一个视频
+  if (video.real === currentVideo.value.real && videoSources.value.length > 0) {
+    await switchVideo(videoSources.value[0], 0);
+  }
+  await PlayerList.updateVideoList(videoSources.value);
+};
 </script>
 
 <style lang="less">
@@ -348,28 +425,6 @@ onUnmounted(() => {
     pointer-events: none;
     color: #c1c1c1;
 
-    &.controls-hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-    .player-header-close {
-      pointer-events: all;
-    }
-
-    .tv-style-title {
-      display: inline-block;
-      font-size: 18px;
-      font-weight: 500;
-      color: #ffffff;
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 6px 12px;
-      border-radius: 4px;
-      margin-right: 10px;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-      letter-spacing: 1px;
-      backdrop-filter: blur(2px);
-      border-left: 3px solid #409eff;
-    }
     .label {
       padding: 4px 8px;
       border-radius: 4px;
@@ -414,7 +469,23 @@ onUnmounted(() => {
         }
       }
     }
+
+    .tv-style-title {
+      display: inline-block;
+      font-size: 18px;
+      font-weight: 500;
+      color: #ffffff;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 6px 12px;
+      border-radius: 4px;
+      margin-right: 10px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      letter-spacing: 1px;
+      backdrop-filter: blur(2px);
+      border-left: 3px solid #409eff;
+    }
     .player-header-close {
+      pointer-events: all;
       position: absolute;
       top: 20px;
       right: 20px;
@@ -437,12 +508,23 @@ onUnmounted(() => {
         }
       }
     }
+
+    &.controls-hidden {
+      > * {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .tv-style-title {
+        opacity: 1 !important;
+      }
+    }
   }
 
-  .video-element {
-    width: 100%;
-    height: 100%;
-  }
+  // .video-element {
+  //   width: 100%;
+  //   height: 100%;
+  // }
 
   iframe {
     position: absolute;
@@ -458,7 +540,7 @@ onUnmounted(() => {
     height: calc(100% - 120px);
     right: 0;
     top: 50px;
-    width: 120px;
+    width: 160px;
     // background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(8px);
     opacity: 1;
@@ -482,6 +564,7 @@ onUnmounted(() => {
     .episode-list-content {
       height: calc(100% - 50px);
       overflow-y: auto;
+      background: rgba(0, 0, 0, 0.2); // 修改为半透明黑色背景
 
       &::-webkit-scrollbar {
         width: 6px;
@@ -495,25 +578,48 @@ onUnmounted(() => {
 
     .episode-item {
       padding: 12px 15px;
-      color: #fff;
+      color: rgba(255, 255, 255, 0.8);
       cursor: pointer;
       transition: all 0.3s ease;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-
-      .check-icon {
-        color: #67c23a;
-        font-size: 16px;
+      gap: 8px;
+      user-select: none !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative; // 添加相对定位
+      .title {
+        font-size: 12px;
       }
-
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1); // 增加hover时的背景透明度
       }
 
       &.active {
-        background: rgba(64, 158, 255, 0.2);
-        color: #409eff;
+        background: rgba(64, 158, 255, 0.2); // 增加选中状态的背景透明度
+        color: #fff;
+        border-left: 3px solid #409eff; // 添加左侧边框标识
+        padding-left: 12px; // 调整左内边距以补偿边框宽度
+
+        .drag-handle {
+          color: #409eff; // 选中状态下图标颜色改为主题色
+        }
+
+        .title {
+          font-weight: 500; // 选中状态下文字加粗
+        }
+      }
+
+      .drag-handle {
+        cursor: move;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 16px;
+        transition: all 0.3s ease;
+        transform: rotateZ(90deg);
+        font-weight: 900;
+
+        &:hover {
+          color: #409eff; // 鼠标悬停在拖拽图标上时变为主题色
+        }
       }
     }
   }
@@ -554,6 +660,68 @@ onUnmounted(() => {
   iframe {
     width: 100%;
     height: 100%;
+  }
+}
+.episode-item {
+  padding: 12px 15px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative; // 添加相对定位
+  .title {
+    font-size: 12px;
+  }
+  &:hover {
+    background: rgba(255, 255, 255, 0.1); // 增加hover时的背景透明度
+  }
+
+  &.active {
+    background: rgba(64, 158, 255, 0.2); // 增加选中状态的背景透明度
+    color: #fff;
+    border-left: 3px solid #409eff; // 添加左侧边框标识
+    padding-left: 12px; // 调整左内边距以补偿边框宽度
+
+    .drag-handle {
+      color: #409eff; // 选中状态下图标颜色改为主题色
+    }
+
+    .title {
+      font-weight: 500; // 选中状态下文字加粗
+    }
+  }
+
+  .drag-handle {
+    cursor: move;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 16px;
+    transition: all 0.3s ease;
+    transform: rotateZ(90deg);
+    font-weight: 900;
+
+    &:hover {
+      color: #409eff; // 鼠标悬停在拖拽图标上时变为主题色
+    }
+  }
+  .delete-btn {
+    opacity: 0;
+    transition: opacity 0.3s;
+    margin-left: auto;
+    padding: 2px;
+
+    .el-icon {
+      font-size: 14px;
+    }
+  }
+
+  &:hover {
+    .delete-btn {
+      opacity: 1;
+    }
   }
 }
 </style>

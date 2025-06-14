@@ -10,10 +10,11 @@ import {
 import { IResult } from "../const/interface";
 
 export default class File {
+  static baseDir: number = BaseDirectory.Resource;
   static async _deleteFile(file: string) {
     try {
       await remove(file, {
-        baseDir: BaseDirectory.Resource,
+        baseDir: this.baseDir,
       });
       return {
         success: true,
@@ -40,7 +41,7 @@ export default class File {
         await this._readDir(prePath);
       }
       await writeFile(file, new TextEncoder().encode(content), {
-        baseDir: BaseDirectory.Resource,
+        baseDir: this.baseDir,
       });
       res = {
         success: true,
@@ -66,7 +67,7 @@ export default class File {
     let content = default_value || "";
     try {
       content = new TextDecoder("utf-8").decode(
-        await readFile(file, { baseDir: BaseDirectory.Resource })
+        await readFile(file, { baseDir: this.baseDir })
       );
       res = {
         success: true,
@@ -84,13 +85,13 @@ export default class File {
     let entries: Array<DirEntry> = [];
     try {
       const res = await readDir(dir, {
-        baseDir: BaseDirectory.Resource,
+        baseDir: this.baseDir,
       });
       entries = res;
     } catch (error) {
       await mkdir(dir, {
         recursive: true,
-        baseDir: BaseDirectory.Resource,
+        baseDir: this.baseDir,
       });
       entries = [];
     } finally {

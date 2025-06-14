@@ -1,83 +1,38 @@
 <template>
   <div class="local-view">
-    <el-card>
+    <el-empty
+      v-if="!currentChannel"
+      description="请先加入频道"
+      :image-size="200"
+      style="margin-top: 80px"
+    ></el-empty>
+
+    <el-card v-else>
       <template #header>
         <div class="view-header">
-          <h2>本地资源</h2>
+          <h2>频道资源</h2>
         </div>
       </template>
 
       <el-tabs v-model="activeTab">
-        <el-tab-pane label="历史记录" name="history">
-          <el-empty
-            v-if="history.length === 0"
-            description="暂无历史记录"
-            :image-size="200"
-          ></el-empty>
-
-          <el-row v-else-if="history.length > 0" :gutter="20">
-            <el-scrollbar wrap-style="height:calc(100vh - 260px);width:100%;">
-              <div
-                class="history-item"
-                v-for="(result, index) in history"
-                :key="index"
-                :xs="24"
-                :sm="12"
-                :md="8"
-                :lg="6"
-              >
-                <el-card
-                  class="video-card"
-                  :body-style="{ padding: '0px' }"
-                  shadow="hover"
-                >
-                  <div class="video-thumbnail">
-                    <el-image
-                      :src="result.thumbnail || '/placeholder.jpg'"
-                      :alt="result.title"
-                      fit="contain"
-                    ></el-image>
-                    <!-- 添加居中的播放图标 -->
-                    <div
-                      class="play-icon-overlay"
-                      @click="playVideo(result, 'history')"
-                    >
-                      <el-icon class="play-icon"><VideoPlay /></el-icon>
-                    </div>
-                  </div>
-                  <div class="video-info">
-                    <h3>{{ result.title }}</h3>
-                    <span>{{ result.text }}</span>
-                    <!-- 移除原来的播放按钮，只保留收藏按钮 -->
-                    <div class="video-actions">
-                      <el-button
-                        @click="addToCollection(result)"
-                        type="warning"
-                        size="small"
-                        plain
-                      >
-                        加入合集
-                      </el-button>
-                    </div>
-
-                    <div class="time">{{ result.time }}</div>
-                  </div>
-                </el-card>
-              </div>
-            </el-scrollbar>
-          </el-row>
-        </el-tab-pane>
-
-        <el-tab-pane label="我的合集" name="favorites">
+        <el-tab-pane label="视频合集" name="video">
           <el-empty
             v-if="collection.length === 0"
             @click="addCollection"
-            description="暂无合集，点击添加"
+            description="该频道暂无合集，点击新增..."
             :image-size="200"
           ></el-empty>
 
           <el-row v-else :gutter="20">
-            <el-scrollbar wrap-style="height:calc(100vh - 260px);width:100%;">
+            <div class="collection-item-add">
+              <el-button @click="addCollection" type="primary">
+                <el-icon class="add-icon"><Plus /></el-icon>
+                &nbsp;新增合集
+              </el-button>
+            </div>
+            <el-scrollbar
+              wrap-style="height:calc(100vh - 324px);width:100%;padding:16px;"
+            >
               <div
                 class="collection-item"
                 v-for="(coll, index) in collection"
@@ -95,51 +50,28 @@
                 >
                   <div class="video-thumbnail">
                     <el-image
-                      :src="coll.coverUrl || '/placeholder.jpg'"
+                      v-if="coll.thumb"
+                      :src="coll.thumb"
                       :alt="coll.title"
                       fit="contain"
                     ></el-image>
-                    <!-- 添加居中的播放图标 -->
+                    <el-image
+                      v-else
+                      src="/logo.png"
+                      :alt="coll.title"
+                      fit="contain"
+                    ></el-image>
                   </div>
                   <div class="video-info">
-                    <h3>{{ coll.title }} ({{ coll.videos.length }})</h3>
-                    <el-text class="video-path" truncated
-                      >{{ coll.id }}
+                    <h3>{{ coll.title }}({{ coll.items }}集)</h3>
+                    <div class="video-actions">
+                      {{ new Date(coll.updatetime * 1000).toLocaleString() }}
+                    </div>
+                    <el-text class="video-path" truncated>
                       <span class="author">
                         {{ coll.author }}
                       </span>
                     </el-text>
-                    <el-button
-                      class="copy-collection"
-                      @click.stop="exportCollection(coll)"
-                      >拷贝合集</el-button
-                    >
-                    <span></span>
-                    <el-button
-                      type="warning"
-                      class="copy-collection"
-                      @click.stop="deleteCollection(coll)"
-                      >删除合集</el-button
-                    >
-                    <div class="video-actions"></div>
-                  </div>
-                </el-card>
-              </div>
-              <div
-                class="collection-item-add"
-                :xs="24"
-                :sm="12"
-                :md="8"
-                :lg="6"
-              >
-                <el-card
-                  class="video-card add-collection-card"
-                  :body-style="{ padding: '0px' }"
-                  shadow="hover"
-                  @click="addCollection"
-                >
-                  <div class="video-thumbnail add-collection-thumbnail">
-                    <el-icon class="add-icon"><Plus /></el-icon>
                   </div>
                 </el-card>
               </div>
@@ -149,6 +81,7 @@
       </el-tabs>
     </el-card>
 
+    <!-- 其他对话框保持不变 -->
     <el-dialog
       class="player-dialog"
       :close-on-click-modal="false"
@@ -159,9 +92,8 @@
     >
       <VideoPlayer
         v-if="showPlayer"
-        :video="currentVideo"
+        :default-current="currentVideo"
         @on-close="showPlayer = false"
-        @on-update="updateVideo"
       ></VideoPlayer>
     </el-dialog>
 
@@ -174,7 +106,7 @@
     >
       <el-tabs v-model="collectionCreateMode">
         <el-scrollbar wrap-style="height:340px">
-          <el-tab-pane label="手动创建" name="manual">
+          <el-tab-pane label="新建" name="manual">
             <el-form :model="collectionForm" label-width="80px">
               <el-form-item label="名称" required>
                 <el-input
@@ -190,8 +122,8 @@
                 ></el-input>
               </el-form-item>
 
-              <el-form-item label="封面图">
-                <el-upload
+              <!-- <el-form-item label="封面图"> -->
+              <!-- <el-upload
                   class="cover-uploader"
                   action="#"
                   :auto-upload="false"
@@ -211,22 +143,9 @@
                     </div>
                   </div>
                   <el-icon v-else class="cover-uploader-icon"><Plus /></el-icon>
-                </el-upload>
-                <div class="cover-tip">默认会以合集内容自动生成封面</div>
-              </el-form-item>
-            </el-form>
-          </el-tab-pane>
-
-          <el-tab-pane label="从URL导入" name="url">
-            <el-form :model="urlImportForm" label-width="80px">
-              <el-form-item label="URL" required>
-                <el-input
-                  v-model="urlImportForm.url"
-                  placeholder="请输入合集URL"
-                  type="textarea"
-                  :rows="3"
-                ></el-input>
-              </el-form-item>
+                </el-upload> -->
+              <!-- <div class="cover-tip">暂无</div> -->
+              <!-- </el-form-item> -->
             </el-form>
           </el-tab-pane>
         </el-scrollbar>
@@ -237,56 +156,12 @@
           <el-button @click="showCollectionDialog = false">取消</el-button>
           <el-button
             type="primary"
-            @click="
-              collectionCreateMode === 'manual'
-                ? saveCollection()
-                : importCollection()
-            "
-            :loading="importing"
+            @click="saveCollection()"
+            :loading="isadding"
+            :disabled="isadding"
           >
-            {{ collectionCreateMode === "manual" ? "确定" : "导入" }}
+            确定
           </el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <el-dialog
-      v-model="showSelectCollectionDialog"
-      title="选择合集"
-      width="30%"
-      :close-on-click-modal="false"
-      class="select-collection-dialog"
-    >
-      <el-scrollbar wrap-style="height:300px">
-        <el-radio-group v-model="selectedCollection">
-          <div class="collection-select-list">
-            <el-radio
-              v-for="(coll, index) in collection"
-              :key="index"
-              :label="coll.id"
-              class="collection-select-item"
-            >
-              <div class="collection-select-content">
-                <el-image
-                  class="collection-thumbnail"
-                  :src="coll.coverUrl || '/placeholder.jpg'"
-                  fit="contain"
-                ></el-image>
-                <span class="collection-title">{{ coll.title }}</span>
-              </div>
-            </el-radio>
-          </div>
-        </el-radio-group>
-      </el-scrollbar>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showSelectCollectionDialog = false"
-            >取消</el-button
-          >
-          <el-button type="primary" @click="confirmAddToCollection"
-            >确定</el-button
-          >
         </span>
       </template>
     </el-dialog>
@@ -298,36 +173,30 @@
       width="70%"
       class="collection-videos-dialog"
       :show-close="false"
+      @close="onCollectionClosed"
     >
       <div class="title">
-        <el-input
-          v-model="currentCollection.title"
-          :class="{ editing: isTitleEditing }"
-          @focus="isTitleEditing = true"
-          @blur="handleTitleBlur"
-        ></el-input>
-        <el-button
-          v-if="isTitleEditing"
-          class="confirm-button"
-          type="success"
-          :icon="Check"
-          circle
-          @click="updateCollectionTitle"
-        />
+        {{ currentCollection.title }}
+
+        <el-icon class="add-item" @click="handleAddItem"><Histogram /></el-icon>
+
+        <!-- <el-button class="add-to-list" @click="add2list"
+          >添加到播放列表结尾</el-button
+        > -->
+        <el-button class="clear-add-to-list" @click="clearadd2list"
+          >清空播放列表并添加当前所有剧集</el-button
+        >
       </div>
       <el-empty
-        v-if="!currentCollection || currentCollection.videos.length === 0"
+        v-if="!currentCollection || currentCollection.zyhjnr.length === 0"
         description="该合集暂无视频"
         :image-size="200"
       ></el-empty>
 
-      <el-scrollbar
-        v-else
-        wrap-style="height:calc(100vh - 500px);width:calc(100% - 0px);"
-      >
+      <el-scrollbar v-else wrap-style="height:420px;width:calc(100% - 0px);">
         <div
           class="video-item"
-          v-for="(video, index) in currentCollection.videos"
+          v-for="(video, index) in currentCollection.zyhjnr"
           :key="index"
           :xs="24"
           :sm="12"
@@ -338,36 +207,23 @@
             class="video-card"
             :body-style="{ padding: '0px' }"
             shadow="hover"
+            @click="playVideo(video, 'collection')"
           >
-            <div class="video-thumbnail">
-              <el-image
+            <div class="resource-item">
+              <!-- <el-image
                 :src="video.thumbnail || '/placeholder.jpg'"
                 :alt="video.title"
                 fit="contain"
-              ></el-image>
-              <div
-                class="play-icon-overlay"
-                @click="playVideo(video, 'collection')"
-              >
+              ></el-image> -->
+              <div class="play-icon-overlay">
                 <el-icon class="play-icon"><VideoPlay /></el-icon>
               </div>
             </div>
             <div class="video-info">
-              <h3>{{ video.title }}</h3>
-              <span>{{ video.text }}</span>
-              <div class="video-actions">
-                <el-button
-                  @click.stop="
-                    removeFromCollection(video, currentCollection.id)
-                  "
-                  type="danger"
-                  size="small"
-                  plain
-                >
-                  移除
-                </el-button>
-              </div>
-              <div class="time">{{ video.time }}</div>
+              <h3>{{ video.title || "暂无" }}</h3>
+              <!-- <span>{{ video.text }}</span> -->
+              <div class="video-actions"></div>
+              <!-- <div class="time">{{ video.time }}</div> -->
             </div>
           </el-card>
         </div>
@@ -381,23 +237,214 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 添加资源对话框 -->
+    <el-dialog
+      v-model="addDialog"
+      title="资源管理"
+      width="80%"
+      :close-on-click-modal="false"
+    >
+      <div class="add-resource-content">
+        <el-tabs v-model="addMode" class="demo-tabs">
+          <el-tab-pane label="单条新增" name="one">
+            <el-scrollbar :wrap-style="{ height: '300px' }">
+              <div class="video-list-item header">
+                <div class="title">资源标题</div>
+                <div class="origin">源网站地址</div>
+                <div class="real">视频源地址提取</div>
+                <div class="type">视频源类型(可不选)</div>
+                <div class="operation">操作</div>
+              </div>
+
+              <VirtList
+                itemKey="origin"
+                :list="currentCollection.zyhjnr"
+                :minSize="20"
+              >
+                <template #default="{ itemData }">
+                  <div class="video-list-item">
+                    <el-input
+                      class="title"
+                      clearable
+                      v-model="itemData.title"
+                      type="textarea"
+                      :rows="2"
+                      placeholder="请输入资源标题"
+                    ></el-input>
+                    <el-input
+                      class="origin"
+                      type="textarea"
+                      :rows="2"
+                      clearable
+                      v-model="itemData.origin"
+                      placeholder="请输入资源标题"
+                    ></el-input>
+
+                    <el-input
+                      class="real"
+                      clearable
+                      type="textarea"
+                      :rows="2"
+                      v-model="itemData.real"
+                      placeholder="请输入资源标题"
+                    ></el-input>
+
+                    <el-select
+                      class="type"
+                      v-model="itemData.type"
+                      placeholder="资源格式（可留空）"
+                      clearable
+                    >
+                      <el-option label="网页" value="iframe"></el-option>
+                      <el-option label="mp4" value="mp4"></el-option>
+                      <el-option label="m3u8" value="m3u8"></el-option>
+                      <el-option label="flv" value="flv"></el-option>
+                      <el-option label="avi" value="avi"></el-option>
+                      <el-option label="wmv" value="wmv"></el-option>
+                      <el-option label="mov" value="mov"></el-option>
+                      <el-option label="ogg" value="ogg"></el-option>
+                      <el-option label="mkv" value="mkv"></el-option>
+                      <el-option label="mkv" value="mkv"></el-option>
+                      <el-option label="ts" value="ts"></el-option>
+                    </el-select>
+
+                    <div class="operation">
+                      <el-button
+                        type="danger"
+                        @click="deleteResourceItem(itemData)"
+                      >
+                        Delete</el-button
+                      >
+                    </div>
+                  </div>
+                </template>
+              </VirtList>
+            </el-scrollbar>
+          </el-tab-pane>
+
+          <el-tab-pane label="批量新增" name="batch">
+            <el-form-item label="批量项目">
+              <el-input
+                type="textarea"
+                placeholder="此项数据可以通过官方插件复制而得"
+                v-model="rawItems"
+                :rows="8"
+              >
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="是否用此数据强制覆盖原本资源列表">
+              <el-switch v-model="force"></el-switch>
+            </el-form-item>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button
+            v-show="addMode == 'one'"
+            class="add-new-resource"
+            type="primary"
+            @click="addNewResource"
+            >新增一条</el-button
+          >
+
+          <el-button @click="addDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleAddConfirm">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <div :class="['drawer', showWorklistDrawer ? '' : 'drawer-hide']">
+      <div class="title">大家想看的</div>
+      <el-empty v-if="worklist.length === 0" description="暂无工单"></el-empty>
+
+      <div v-else>
+        <el-scrollbar :wrap-style="{ height: 'calc(100vh - 180px)' }">
+          <div v-for="(item, idx) in worklist" :key="idx" class="work-item">
+            <el-card>
+              <template #header>
+                <div class="view-header">
+                  <h2>{{ item.title }}</h2>
+                </div>
+              </template>
+
+              <p>{{ item.description }}</p>
+              <p>{{ new Date(item.updatetime * 1000).toLocaleString() }}</p>
+
+              <el-tag :type="item.yijiejue == 2 ? 'success' : 'warning'">{{
+                item.yijiejue == 0 ? "待解决" : "已解决"
+              }}</el-tag>
+            </el-card>
+          </div>
+        </el-scrollbar>
+      </div>
+
+      <div class="footer">
+        <el-button type="primary" @click="requestwork">我想找</el-button>
+      </div>
+
+      <div
+        class="kkk"
+        @click="
+          () => {
+            showWorklistDrawer = !showWorklistDrawer;
+          }
+        "
+      >
+        <img src="/logo.png" alt="" />
+      </div>
+    </div>
+
+    <!-- 新建工单对话框 -->
+    <el-dialog v-model="showRequestWorkDialog" title="新建工单" width="400px">
+      <el-form :model="requestWorkForm" label-width="80px">
+        <el-form-item label="标题" required>
+          <el-input
+            v-model="requestWorkForm.subject"
+            placeholder="请输入需求标题"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="描述" required>
+          <el-input
+            type="textarea"
+            v-model="requestWorkForm.description"
+            placeholder="请填写详细描述"
+          ></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showRequestWorkDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleRequestWorkConfirm"
+          >确认</el-button
+        >
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated } from "vue";
-import { useRouter } from "vue-router";
-import { VideoPlay, Delete, Plus, Check } from "@element-plus/icons-vue"; // 添加 Delete 图标
+import { ref, onMounted, onActivated, nextTick } from "vue";
+import {
+  VideoPlay,
+  Delete,
+  Plus,
+  Check,
+  CirclePlusFilled,
+  Histogram,
+} from "@element-plus/icons-vue";
 import { ElMessageBox, ElMessage } from "element-plus";
-import History from "../tool/history";
+import { VirtList } from "vue-virt-list";
 import Collection from "../tool/collection";
-import Generater from "../tool/generater";
-import Plugin from "../tool/plugin";
+import PlayerList from "../tool/playerList";
+import Channel from "../api/channel";
+import Config from "../tool/config";
 import VideoPlayer from "../components/VideoPlayer.vue";
 import { DEFAULT_COLLECTION_COVER } from "../const/const";
 
-const router = useRouter();
-const activeTab = ref("history");
+const activeTab = ref("video");
 const showPlayer = ref(false);
 const currentVideo = ref({});
 const playMode = ref("history");
@@ -412,123 +459,135 @@ const selectedCollection = ref(null);
 const videoToAdd = ref(null);
 const showCollectionVideosDialog = ref(false);
 const currentCollection = ref(null);
-const history = ref([]);
 const collection = ref([]);
 const isTitleEditing = ref(false);
 const originalTitle = ref("");
+const collectionCreateMode = ref("manual");
+const importing = ref(false);
+const addDialog = ref(false);
+const isadding = ref(false);
+const addMode = ref("one");
+const force = ref(false);
+const showWorklistDrawer = ref(false);
+const showRequestWorkDialog = ref(false);
 
-const updateVideo = (video_urls) => {
-  Object.assign(currentVideo.value, {
-    video_urls: video_urls,
+const requestWorkForm = ref({
+  subject: "",
+  description: "",
+});
+
+const addForm = ref({
+  title: "",
+  origin: "",
+  real: "",
+  type: "",
+});
+
+const rawItems = ref("");
+
+const requestwork = () => {
+  showRequestWorkDialog.value = true;
+};
+
+const onCollectionClosed = async () => {
+  //
+  await getChannelCollections();
+};
+
+const deleteResourceItem = (itemdata) => {
+  if (!currentCollection.value || !currentCollection.value.zyhjnr) return;
+  ElMessageBox.confirm("确定要删除该资源吗？", "删除确认", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  }).then(() => {
+    const idx = currentCollection.value.zyhjnr.indexOf(itemdata);
+    if (idx !== -1) {
+      currentCollection.value.zyhjnr.splice(idx, 1);
+    }
   });
-  switch (playMode.value) {
-    case "history":
-      History.updateHistoryItem(currentVideo.value);
-      break;
-    case "collection":
-      Collection.updateCollectionItem(
-        currentCollection.value.id,
-        currentVideo.value
-      );
-      break;
+};
+
+const addNewResource = () => {
+  if (!currentCollection.value || !currentCollection.value.zyhjnr) return;
+  currentCollection.value.zyhjnr.push({
+    title: "",
+    origin: "",
+    real: "",
+    type: "",
+  });
+  // 自动滚动到最后
+  nextTick(() => {
+    const virtList = document.querySelector(
+      ".add-resource-content .el-scrollbar__wrap"
+    );
+    if (virtList) {
+      virtList.scrollTop = virtList.scrollHeight;
+    }
+  });
+};
+
+const handleRequestWorkConfirm = async () => {
+  if (requestWorkForm.value.description && requestWorkForm.value.subject) {
+    const config = await Config.getConfiguration();
+    await Channel.pushwork(config.channel, requestWorkForm.value);
+    showRequestWorkDialog.value = false;
+    requestWorkForm.value = { subject: "", description: "" };
+    await getWorkList();
   }
 };
 
-function playVideo(video, type) {
+const clearadd2list = async () => {
+  await PlayerList.pushVideo(currentCollection.value.zyhjnr, true);
+};
+
+const add2list = async () => {
+  await PlayerList.pushVideo(currentCollection.value.zyhjnr);
+};
+
+// 处理新增确认
+const handleAddConfirm = async () => {
+  try {
+    if (addMode.value === "one") {
+      await Channel.pushItemsToCollection(
+        JSON.stringify(currentCollection.value.zyhjnr),
+        currentCollection.value.id,
+        true
+      );
+    }
+
+    if (addMode.value === "batch") {
+      await Channel.pushItemsToCollection(
+        rawItems.value,
+        currentCollection.value.id,
+        force.value
+      );
+      rawItems.value = "";
+    }
+    // await PlayerList.pushVideo(addForm.value, currentCollection.value.id);
+
+    const data = await Channel.getCollectionDetails(currentCollection.value.id);
+    currentCollection.value = data;
+    nextTick();
+    addDialog.value = false;
+  } catch (error) {
+    ElMessage.error(error);
+  }
+};
+
+const handleAddItem = () => {
+  addDialog.value = true;
+};
+
+async function playVideo(video, type) {
   playMode.value = type;
-  console.log("playVideo", video);
   currentVideo.value = video;
+  await PlayerList.pushVideo(video);
   showPlayer.value = true;
 }
 
-async function addToCollection(video) {
-  videoToAdd.value = video;
-  showSelectCollectionDialog.value = true;
-}
-
-async function confirmAddToCollection() {
-  if (!selectedCollection.value) {
-    ElMessage.warning("请选择一个合集");
-    return;
-  }
-  if (!videoToAdd.value) {
-    ElMessage.warning("没有要添加的视频");
-    return;
-  }
-
-  console.log("selectedCollection", selectedCollection.value);
-  console.log("videoToAdd", videoToAdd.value);
-  const collectionId = selectedCollection.value;
-  const video = videoToAdd.value;
-  const res = await Collection.pushVideo2Collection(collectionId, video);
-  if (!res.success) {
-    ElMessage.warning(res.message);
-  } else {
-    ElMessage.success("添加成功");
-  }
-  showSelectCollectionDialog.value = false;
-  collection.value = await Collection.getCollections();
-}
-
-const removeFromCollection = async (video, collectionId) => {
-  const res = await Collection.removeVideoFromCollection(collectionId, video);
-  collection.value = await Collection.getCollections();
-  const res2 = await Collection.getCollection(collectionId);
-  if (!res.success) {
-    ElMessage.warning(res.message);
-  } else {
-    currentCollection.value = res2.data;
-  }
-};
-// 添加合集函数
-// 在其他 ref 变量后添加
-const collectionCreateMode = ref("manual");
-const urlImportForm = ref({
-  url: "",
-});
-const importing = ref(false);
-
-const exportCollection = async (coll) => {
-  try {
-    const needToParse = Collection.checkCollectionIsReady(coll);
-    if (needToParse.length > 0) {
-      ElMessage.warning(
-        `合集 ${coll.title} 中的 ${needToParse.length} 个视频未解析`
-      );
-      return;
-    }
-
-    const collectionData = JSON.stringify(coll, null, 2);
-    await navigator.clipboard.writeText(collectionData);
-    ElMessage.success("合集数据已复制到剪贴板");
-  } catch (error) {
-    console.error("复制失败:", error);
-    ElMessage.error("复制失败，请重试");
-  }
-};
-// 添加导入方法
-const importCollection = async () => {
-  if (!urlImportForm.value.url.trim()) {
-    ElMessage.warning("请输入合集URL");
-    return;
-  }
-
-  importing.value = true;
-  try {
-    // TODO: 实现从URL导入合集的逻辑
-    const result = await Collection.importFromUrl(urlImportForm.value.url);
-    ElMessage.success("导入成功");
-    showCollectionDialog.value = false;
-    collection.value = await Collection.getCollections();
-  } catch (error) {
-    ElMessage.error("导入失败：" + error.message);
-  } finally {
-    importing.value = false;
-  }
-};
-
-// 修改 addCollection 函数
 function addCollection() {
+  isadding.value = false;
   showCollectionDialog.value = true;
   collectionCreateMode.value = "manual";
   collectionForm.value = {
@@ -536,46 +595,7 @@ function addCollection() {
     description: "",
     coverUrl: DEFAULT_COLLECTION_COVER,
   };
-  urlImportForm.value = {
-    url: "",
-  };
 }
-
-const deleteCollection = async (coll) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除合集 "${coll.title}" 吗？`, "警告", {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-      type: "warning",
-    })
-      .then(async () => {
-        const res = await Collection.deleteCollection(coll.id);
-        if (!res.success) {
-          ElMessage.warning(res.message);
-        } else {
-          ElMessage.success("删除成功");
-          collection.value = await Collection.getCollections();
-          showCollectionVideosDialog.value = false;
-        }
-      })
-      .catch(() => {
-        // ElMessage({
-        //   type: "info",
-        //   message: "Delete canceled",
-        // });
-      });
-  } catch {
-    // 用户点击取消按钮时，不执行任何操作
-  }
-};
-
-const generateCover = async (coll) => {
-  const thumbnails = coll.videos.map((video) => video.thumbnail);
-  const cover = await Generater.generateThumbnailCloud(thumbnails);
-  coll.coverUrl = cover;
-  await Collection.updateCollection(coll);
-  collection.value = await Collection.getCollections();
-};
 
 // 处理封面图片变更
 function handleCoverChange(file) {
@@ -585,10 +605,10 @@ function handleCoverChange(file) {
     return;
   }
 
-  // 限制文件大小为 2MB
+  // 限制文件大小为 5MB
   const isLt2M = file.size / 1024 / 1024 < 5;
   if (!isLt2M) {
-    ElMessage.error("图片大小不能超过 2MB!");
+    ElMessage.error("图片大小不能超过 5MB!");
     return;
   }
 
@@ -600,20 +620,11 @@ function handleCoverChange(file) {
   };
 }
 
-// 在 openCollection 函数中添加
-function openCollection(coll) {
-  currentCollection.value = coll;
-  originalTitle.value = coll.title; // 保存原始标题
+async function openCollection(coll) {
+  const data = await Channel.getCollectionDetails(coll.id);
+  currentCollection.value = data;
   showCollectionVideosDialog.value = true;
 }
-
-// 添加新的处理函数
-const handleTitleBlur = () => {
-  // 如果标题没有改变，直接退出编辑模式
-  if (currentCollection.value.title === originalTitle.value) {
-    isTitleEditing.value = false;
-  }
-};
 
 const updateCollectionTitle = async () => {
   if (!currentCollection.value.title.trim()) {
@@ -648,63 +659,105 @@ async function saveCollection() {
     ElMessage.warning("请输入合集名称");
     return;
   }
-
-  // 生成基于标题和当前时间的唯一ID
-  const timestamp = new Date().getTime();
-  const uniqueId = Generater.generateName(
-    `${collectionForm.value.title}-${timestamp}`
-  );
-
-  // 创建一个新合集
   const newCollection = {
-    id: uniqueId,
     title: collectionForm.value.title,
     description: collectionForm.value.description,
-    coverUrl: collectionForm.value.coverUrl,
-    videos: [],
+    coverUrl: "",
   };
-  await Collection.pushCollection(uniqueId, newCollection);
-  collection.value = await Collection.getCollections();
-
-  ElMessage({
-    message: `已创建合集: ${collectionForm.value.title}`,
-    type: "success",
-    duration: 2000,
-  });
-  showCollectionDialog.value = false;
+  isadding.value = true;
+  const success = await Channel.addCollection(newCollection);
+  if (success) {
+    getChannelCollections();
+    collectionForm.value = {
+      title: "",
+      description: "",
+      coverUrl: "",
+    };
+    showCollectionDialog.value = false;
+  }
+  isadding.value = false;
 }
 
-const init = async () => {
-  await Plugin.setPlugin();
-  history.value = await History.getHistory();
-  collection.value = await Collection.getCollections();
-  console.log("history", history.value);
-  console.log("collection", collection.value);
-  const autoPlay = router.currentRoute.value.query.autoPlay;
-  if (autoPlay) {
-    activeTab.value = "history";
-    playVideo(history.value[0], "history");
-    router.replace({ query: {} });
+const currentChannel = ref("");
+
+const getChannelCollections = async (channelId) => {
+  if (!channelId) {
+    const config = await Config.getConfiguration();
+    channelId = config.channel;
+  }
+
+  currentChannel.value = channelId;
+  const res = await Channel.getChannelCollections(channelId);
+  if (res) {
+    collection.value = res;
+  } else {
+    collection.value = [];
   }
 };
 
+const worklist = ref([]);
+
+const getWorkList = async (channelId) => {
+  if (!channelId) {
+    const config = await Config.getConfiguration();
+    channelId = config.channel;
+  }
+  worklist.value = await Channel.getWorkList(channelId);
+  console.log("worklist", worklist.value);
+};
+
 onActivated(async () => {
-  await init();
+  await getChannelCollections();
+  await getWorkList();
 });
 
 onMounted(async () => {
-  // await Collection.clearCollections();
-  // await History.clearHistory();
-  await init();
+  await getChannelCollections();
+  await getWorkList();
 });
 </script>
 
 <style lang="less">
 .local-view {
+  .el-empty {
+    .el-empty__description {
+      p {
+        color: #4466ff;
+        font-weight: 900;
+      }
+    }
+  }
+  @keyframes gzh-animate {
+    0% {
+      transform: rotateZ(0deg);
+    }
+    40% {
+      transform: rotateZ(0deg);
+    }
+    45% {
+      transform: rotateZ(25deg);
+    }
+    50% {
+      transform: rotateZ(-25deg);
+    }
+
+    55% {
+      transform: rotateZ(25deg);
+    }
+    60% {
+      transform: rotateZ(0deg);
+    }
+    100% {
+      transform: rotateZ(0deg);
+    }
+  }
   .view-header {
     h2 {
       margin: 0;
     }
+  }
+  > .el-card {
+    background: rgba(255, 255, 255, 0.9);
   }
 
   .history-item,
@@ -716,16 +769,60 @@ onMounted(async () => {
     cursor: pointer;
   }
   .collection-item {
-    .video-info {
-      .video-path {
-        display: block;
-        margin: 5px 0;
-        color: #666;
-        font-size: 12px;
-
-        .author {
-          float: right;
-          color: #f35804;
+    display: inline-block;
+    width: 260px;
+    margin: 8px;
+    vertical-align: top;
+    transition: transform 0.2s;
+    .video-card {
+      border-radius: 14px;
+      box-shadow: 0 2px 4px rgba(31, 38, 135, 0.08);
+      transition: box-shadow 0.2s, transform 0.2s;
+      &:hover {
+        transform: translateY(-6px) scale(1.01);
+      }
+      .video-thumbnail {
+        border-radius: 14px 14px 0 0;
+        overflow: hidden;
+        height: 160px;
+        background: #f4f6fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        .el-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+      .video-info {
+        padding: 16px 14px 10px 14px;
+        h3 {
+          font-size: 17px;
+          font-weight: 600;
+          margin: 0 0 8px 0;
+          color: #222;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .video-actions {
+          margin-top: 8px;
+          font-size: 13px;
+          color: #999;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .video-path {
+          display: block;
+          margin: 5px 0 0 0;
+          color: #666;
+          font-size: 13px;
+          .author {
+            float: right;
+            color: #f35804;
+            font-weight: 500;
+          }
         }
       }
     }
@@ -773,6 +870,15 @@ onMounted(async () => {
         }
       }
     }
+    .resource-item {
+      //
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f5f5f5;
+      position: relative;
+      overflow: hidden;
+    }
 
     .video-info {
       padding: 14px;
@@ -819,25 +925,11 @@ onMounted(async () => {
 
   .collection-item-add {
     display: inline-block;
-    width: 240px;
-    margin: 20px;
+    width: 100%;
+    margin: 0 10px;
     vertical-align: top;
-
-    .add-collection-card {
-      cursor: pointer;
-
-      .add-collection-thumbnail {
-        height: 200px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #f5f7fa;
-
-        .add-icon {
-          font-size: 48px;
-          color: #909399;
-        }
-      }
+    .el-button {
+      width: 100%;
     }
   }
 
@@ -911,31 +1003,181 @@ onMounted(async () => {
       }
     }
   }
-}
 
-.collection-videos-dialog {
-  .title {
-    // display: flex;
-    // align-items: center;
-    margin-bottom: 20px;
-
-    .el-input {
-      // flex: 1;
-      margin: 0px 10px;
-      width: 240px;
-
-      &.editing {
-        .el-input__inner {
-          border-color: var(--el-color-primary);
+  .drawer {
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15),
+      0 1.5px 6px rgba(0, 0, 0, 0.08);
+    border-radius: 18px 0 0 18px;
+    position: absolute;
+    right: -300px;
+    top: 0px;
+    width: 260px;
+    z-index: 999;
+    height: calc(100% - 36px);
+    background: linear-gradient(135deg, #f8fafc 60%, #e3e6eb 100%);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 18px 18px 18px 18px;
+    border: 1.5px solid #e0e0e0;
+    .kkk {
+      position: absolute;
+      left: -48px;
+      height: 48px;
+      transform: translateY(-50%);
+      top: 50%;
+      cursor: pointer;
+      z-index: -1;
+      // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      // background: #fff;
+      // border: 1px solid #e0e0e0;
+      transition: box-shadow 0.2s;
+      width: 48px;
+      animation: gzh-animate;
+      animation-duration: 3s;
+      animation-iteration-count: infinite;
+      animation-fill-mode: both;
+      &:hover img {
+        opacity: 0.8;
+      }
+      img {
+        width: 100%;
+      }
+    }
+    .title {
+      text-align: center;
+      padding: 18px 0 12px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      letter-spacing: 1px;
+    }
+    .work-item {
+      .el-card {
+        margin-bottom: 18px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        transition: box-shadow 0.2s;
+        &:hover {
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.13);
         }
       }
     }
-    .delete-button {
-      float: right;
+    .footer {
+      text-align: center;
+      padding: 18px 0 0 0;
+      .el-button {
+        border-radius: 20px;
+        font-weight: 500;
+        padding: 8px 28px;
+        background: linear-gradient(90deg, #ffb86c 0%, #ff7b7b 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 2px 8px rgba(255, 186, 108, 0.12);
+        transition: background 0.2s;
+        &:hover {
+          background: linear-gradient(90deg, #ff7b7b 0%, #ffb86c 100%);
+        }
+      }
     }
+  }
+  .drawer-hide {
+    right: 0;
   }
 }
 
+.collection-videos-dialog {
+  .el-dialog__body {
+    background: #f8fafc;
+    border-radius: 0 0 16px 16px;
+    padding: 24px 32px 16px 32px;
+    height: 500px;
+  }
+  .title {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 24px;
+    font-size: 26px;
+    font-weight: 600;
+    color: #333;
+    position: relative;
+    .add-item {
+      cursor: pointer;
+      margin-left: 16px;
+      font-size: 22px;
+      color: #888;
+      transition: color 0.2s;
+      &:hover {
+        color: var(--el-color-primary);
+      }
+    }
+    .add-to-list,
+    .clear-add-to-list {
+      font-size: 15px;
+      margin-left: 18px;
+      position: absolute;
+      right: 0;
+      top: 0;
+      background: linear-gradient(90deg, #ffb86c 0%, #ff7b7b 100%);
+      color: #fff;
+      border-radius: 18px;
+      border: none;
+      padding: 6px 22px;
+      box-shadow: 0 2px 8px rgba(255, 186, 108, 0.1);
+      transition: background 0.2s;
+      cursor: pointer;
+      &:hover {
+        background: linear-gradient(90deg, #ff7b7b 0%, #ffb86c 100%);
+      }
+    }
+    // .clear-add-to-list {
+    //   top: 50px;
+    // }
+  }
+  .video-item {
+    display: inline-block;
+    width: 240px;
+    margin: 10px 12px 18px 0;
+    vertical-align: top;
+    .video-card {
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(31, 38, 135, 0.08);
+      transition: box-shadow 0.2s, transform 0.2s;
+      &:hover {
+        box-shadow: 0 6px 24px rgba(31, 38, 135, 0.16);
+        transform: translateY(-4px) scale(1.03);
+      }
+      .resource-item {
+        border-radius: 12px 12px 0 0;
+        overflow: hidden;
+        min-height: 60px;
+        background: #f4f6fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .video-info {
+        padding: 16px 14px 10px 14px;
+        h3 {
+          font-size: 16px;
+          font-weight: 500;
+          margin: 0 0 8px 0;
+          color: #222;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .video-actions {
+          margin-top: 8px;
+          display: flex;
+          justify-content: flex-end;
+        }
+      }
+    }
+  }
+  .el-empty {
+    margin: 40px 0;
+  }
+}
 .player-dialog {
   :deep(.el-dialog__body) {
     padding: 0;
@@ -947,5 +1189,91 @@ onMounted(async () => {
     align-self: flex-start;
     margin-top: 20px;
   }
+}
+
+.add-resource-content {
+  position: relative;
+  background: #f8fafc;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(31, 38, 135, 0.06);
+  padding: 8px 18px 18px 18px;
+  margin-top: 10px;
+  height: 380px;
+  .video-list-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 10px 12px 10px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #e3e6eb;
+    background: #fff;
+    margin-bottom: 14px;
+    transition: box-shadow 0.2s, border 0.2s;
+    box-sizing: border-box;
+    &:hover {
+      box-shadow: 0 4px 16px rgba(31, 38, 135, 0.1);
+      border: 1.5px solid #b3b8c3;
+    }
+    > div,
+    .el-input,
+    .el-select {
+      margin: 0 6px;
+    }
+    .title {
+      width: 220px;
+    }
+    .origin {
+      width: 220px;
+    }
+    .real {
+      width: 320px;
+    }
+    .type {
+      width: 150px;
+    }
+    .operation {
+      width: 100px;
+    }
+    .el-input__inner,
+    .el-textarea__inner {
+      border-radius: 6px;
+      background: #f4f6fa;
+      border: 1px solid #e3e6eb;
+      transition: border 0.2s;
+    }
+    .el-input__inner:focus,
+    .el-textarea__inner:focus {
+      border: 1.5px solid #409eff;
+      background: #fff;
+    }
+  }
+  .header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    background: #e3e6eb;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    color: #333;
+    box-shadow: 0 2px 8px rgba(31, 38, 135, 0.04);
+    padding: 10px 0 10px 0;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    .title,
+    .origin,
+    .real,
+    .type {
+      text-align: center;
+      color: #666;
+      font-size: 15px;
+    }
+  }
+}
+.add-new-resource {
+  float: left;
 }
 </style>

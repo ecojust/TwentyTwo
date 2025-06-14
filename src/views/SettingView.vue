@@ -1,73 +1,204 @@
 <template>
   <div class="setting-view">
-    <el-card>
-      <div class="theme-settings">
-        <h2 v-on="longPress()">主题设置</h2>
-        <div class="theme-list">
-          <div
-            v-for="theme in SYSTEM_THEMES"
-            :key="theme.name"
-            class="theme-item"
-            :class="{ active: currentTheme === theme.name }"
-            @click="changeTheme(theme.name)"
-          >
-            <div class="theme-preview">
-              <img fill="contain" :src="theme.preview" alt="" />
+    <el-card class="user-profile">
+      <!-- 频道信息区域 -->
+      <h1 class="channel-title">频道</h1>
+      <div
+        v-if="!channelDetail"
+        class="empty-channel-tip"
+        @click="showAddChannelDialog = true"
+      >
+        <el-empty
+          description="您还未加入任何频道，点击此处加入频道吧"
+        ></el-empty>
+      </div>
+      <div
+        v-else
+        class="channel-info-section"
+        @click="showAddChannelDialog = true"
+      >
+        <div class="channel-info">
+          <!-- 使用 Flexbox 布局 -->
+          <div class="channel-thumb">
+            <img
+              v-if="channelDetail.thumb"
+              :src="channelDetail.thumb"
+              alt="频道缩略图"
+            />
+            <img v-else src="/logo.png" alt="频道缩略图" />
+          </div>
+          <div class="channel-details">
+            <div class="channel-name">{{ channelDetail.title }}</div>
+            <div class="channel-code">成员数：{{ channelDetail.users }}</div>
+
+            <div class="channel-code">频道码: {{ channelDetail.code }}</div>
+            <div class="channel-desc">{{ channelDetail.description }}</div>
+
+            <div class="channel-tags" v-if="channelDetail.keywords">
+              <el-tag
+                v-for="keyword in channelDetail.keywords.split(',')"
+                :key="keyword"
+                >{{ keyword }}</el-tag
+              >
             </div>
-            <div class="theme-name">{{ theme.name }}</div>
           </div>
         </div>
+      </div>
+
+      <div class="create-channel">
+        <el-button type="primary" @click="createChannel">
+          创建我的频道</el-button
+        >
+      </div>
+
+      <!-- 设置入口列表 -->
+      <div class="settings-list">
+        <el-collapse accordion>
+          <el-collapse-item title="主题设置" name="1">
+            <div class="theme-list">
+              <div
+                v-for="theme in SYSTEM_THEMES"
+                :key="theme.name"
+                class="theme-item"
+                :class="{ active: currentTheme === theme.name }"
+                @click="changeTheme(theme.name)"
+              >
+                <div class="theme-preview">
+                  <img fill="contain" :src="theme.preview" alt="" />
+                </div>
+                <div class="theme-name">{{ theme.name }}</div>
+              </div>
+            </div>
+          </el-collapse-item>
+
+          <el-collapse-item title="关于" name="3">
+            <div class="about-content">
+              <p>一款互助搜索工具，团结一切可以团结的力量！</p>
+              <p>版本：{{ appVersion }}</p>
+              <p @click="goto('https://github.com/ecojust/TwentyTwo')">
+                开源地址：<a href="#">GitHub</a>
+              </p>
+              <p @click="goto('https://pd.qq.com/g/pd74066781')">
+                问题反馈：<a href="#">Issues</a>
+              </p>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
       </div>
     </el-card>
 
-    <!-- 新增皮肤开发对话框 -->
+    <!-- 添加/编辑频道对话框 -->
     <el-dialog
-      class="dev-dialog"
-      v-model="showDevDialog"
-      width="80%"
-      :close-on-click-modal="false"
+      v-model="showAddChannelDialog"
+      :title="channelDetail ? '更换频道' : '加入频道'"
+      width="500px"
       destroy-on-close
-      :show-close="false"
-      @close="handlecloseDevDialog"
+      class="channel-dialog"
     >
-      <div class="dev-container">
-        <div class="dev-header">
-          <div class="style-title">
-            <span title="点击查看效果" class="run" @click="run">🎨</span>
-            <!-- <el-button size="small" >🎨</el-button> -->
-          </div>
-
-          <span
-            class="header-close"
-            size="small"
-            @click="showDevDialog = false"
+      <div class="channel-code-section">
+        <div class="channel-code-input">
+          <el-input
+            :prefix-icon="Key"
+            placeholder="请输入频道码"
+            v-model="encodeChannel"
+            clearable
           >
-            ❎
-          </span>
-        </div>
-        <div class="editor-container">
-          <div ref="monacoContainer" class="monaco-editor"></div>
+          </el-input>
+          <div class="channel-code-tip">联系管理员获取频道码</div>
         </div>
       </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showAddChannelDialog = false">取消</el-button>
+          <el-button type="primary" @click="saveChannel">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="showCreateChannelDialog"
+      title="创建频道"
+      width="500px"
+      destroy-on-close
+      class="channel-dialog"
+    >
+      <div class="channel-code-section">
+        <div class="channel-code-input">
+          <el-form label-width="120px">
+            <el-form-item label="频道名称" required>
+              <el-input
+                :prefix-icon="Guide"
+                placeholder="请输入频道名称(用于显示的名称)"
+                v-model="newChannelName"
+                clearable
+              >
+              </el-input>
+            </el-form-item>
+            <el-form-item label="频道描述">
+              <el-input
+                type="textarea"
+                :rows="2"
+                placeholder="请输入频道描述"
+                v-model="newChannelDescription"
+                clearable
+              >
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="频道码(自动生成)">
+              <el-input
+                disabled
+                :prefix-icon="StarFilled"
+                v-model="newChannelEncode"
+                clearable
+              >
+              </el-input>
+            </el-form-item>
+          </el-form>
+
+          <!-- <div class="channel-code-tip">联系管理员获取频道码</div> -->
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showCreateChannelDialog = false">取消</el-button>
+          <el-button type="primary" @click="requestCreateChannel"
+            >确定</el-button
+          >
+        </span>
+      </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
+import { ref, onMounted } from "vue";
+import { Key, Guide, StarFilled } from "@element-plus/icons-vue";
+import { SYSTEM_THEMES } from "../const/const";
+import { openPath } from "@tauri-apps/plugin-opener";
+import { getVersion } from "@tauri-apps/api/app";
+import { ElMessage } from "element-plus";
+import Channel from "../api/channel";
 import Config from "../tool/config";
-import { SYSTEM_THEMES, THEME_TEMPLATE } from "../const/const";
-import Monaco from "../tool/monaco";
-import { Close } from "@element-plus/icons-vue";
-import Event from "../tool/event";
+import Generater from "../tool/generater";
+const appVersion = ref("加载中...");
+import { v4 as uuidv4 } from "uuid";
+const channelDetail = ref(null);
 
-const themes = ref([]);
+const encodeChannel = ref(""); // 初始化为空字符串
 const currentTheme = ref("default");
-const showDevDialog = ref(false);
-const monacoContainer = ref(null);
 
-const longPress = () => {
-  return Event.longPress(1000, handleOpenEditorDialog).value;
+// 频道相关数据
+const showAddChannelDialog = ref(false);
+
+const showCreateChannelDialog = ref(false);
+
+const goto = (url) => {
+  openPath(url).catch((err) => {
+    console.error("无法打开链接:", err);
+  });
 };
 
 const changeTheme = async (theme) => {
@@ -76,39 +207,79 @@ const changeTheme = async (theme) => {
   await Config.applyTheme();
 };
 
-const handleOpenEditorDialog = () => {
-  showDevDialog.value = true;
-  nextTick(async () => {
-    if (monacoContainer.value) {
-      Monaco.create(
-        monacoContainer.value,
-        {
-          language: "css",
-        },
-        THEME_TEMPLATE,
-        () => {
-          // const content = Monaco.getValue().trim();
-          // Config.applyDraftTheme(content);
-        }
-      );
-    }
-  });
+const newChannelEncode = ref("");
+const newChannelName = ref("");
+const newChannelDescription = ref("");
+
+const createChannel = async () => {
+  newChannelEncode.value = Generater.encryptChannel(uuidv4(), "fromClient");
+  showCreateChannelDialog.value = true;
 };
 
-const run = () => {
-  const content = Monaco.getValue().trim();
-  Config.applyDraftTheme(content);
+const requestCreateChannel = async () => {
+  const encodechannel = await Channel.createChannel(
+    newChannelEncode.value,
+    newChannelName.value,
+    newChannelDescription.value
+  );
+
+  if (encodechannel) {
+    await Config.setChannel(encodechannel);
+    await getChannelDetail(encodechannel, true);
+  }
+  showCreateChannelDialog.value = false;
 };
 
-const handlecloseDevDialog = async () => {
-  Monaco.dispose();
-  await Config.applyTheme();
+const saveChannel = async () => {
+  if (!encodeChannel.value) return;
+  await Config.setChannel(encodeChannel.value);
+  await getChannelDetail(encodeChannel.value, true);
+  showAddChannelDialog.value = false; // Corrected assignment
+};
+
+const getWorkList = async (channelId) => {
+  const worklist = await Channel.getWorkList(channelId);
+  console.log("worklist", worklist);
+};
+
+const getChannelDetail = async (channelId, notify) => {
+  const channel = await Channel.getChannelDetail(channelId);
+  if (channel) {
+    channelDetail.value = channel;
+    encodeChannel.value = channelId;
+    notify &&
+      ElMessage({
+        type: "success",
+        message: "加入频道成功",
+      });
+    console.log("获取频道信息成功", channel);
+  } else {
+    channelDetail.value = null;
+    encodeChannel.value = "";
+    notify &&
+      ElMessage({
+        type: "error",
+        message: "频道码无效",
+      });
+    console.log("获取频道信息失败");
+  }
 };
 
 onMounted(async () => {
   // 在这里可以加载用户已保存的主题设置
   const config = await Config.getConfiguration();
+  console.log("config", config);
   currentTheme.value = config.theme;
+  await getChannelDetail(config.channel);
+  // await getWorkList(config.channel);
+
+  try {
+    // 从 Tauri 应用获取版本信息
+    appVersion.value = await getVersion();
+  } catch (error) {
+    console.error("获取版本信息失败:", error);
+    appVersion.value = "v1.0.0"; // 获取失败时使用默认版本
+  }
 });
 </script>
 
@@ -116,142 +287,146 @@ onMounted(async () => {
 .setting-view {
   width: 100%;
 
-  .theme-settings {
-    h2 {
-      margin-bottom: 30px;
-      font-size: 28px;
-      color: #2c3e50;
-      font-weight: 600;
-      position: relative;
-      padding-left: 15px;
+  .user-profile {
+    .empty-channel-tip {
+      padding: 40px 0;
+      cursor: pointer;
+      transition: all 0.3s;
 
-      &:before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 4px;
-        height: 70%;
-        background: #f59712;
-        border-radius: 2px;
+      &:hover {
+        background: #f5f7fa;
       }
     }
+    .create-channel {
+      text-align: center;
+    }
 
-    .theme-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 25px;
-      padding: 10px;
-
-      .theme-item {
-        cursor: pointer;
-        border-radius: 12px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        border: 3px solid transparent;
-        background: #ffffff;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-
-        &:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-        }
-
-        &.active {
-          border-color: #f59712;
-          box-shadow: 0 0 0 2px rgba(245, 151, 18, 0.3);
-        }
-
-        .theme-preview {
-          height: 150px;
-          padding: 0px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(45deg, #f5f7fa, #e4e7eb);
-
+    .channel-info-section {
+      padding: 20px 0;
+      .channel-info {
+        display: flex;
+        flex-direction: column; /* Changed to column for vertical layout */
+        align-items: center;
+        cursor: pointer; /* Added cursor pointer */
+        .channel-thumb {
+          width: 80px;
+          height: 80px;
+          margin-right: 0; /* Removed margin-right */
+          margin-bottom: 10px; /* Added margin-bottom */
+          border-radius: 50%;
+          overflow: hidden;
           img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            transition: transform 0.3s ease;
-          }
-
-          &:hover img {
-            transform: scale(1.05);
+            object-fit: cover;
           }
         }
-
-        .theme-name {
-          padding: 12px;
+        .channel-name {
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 10px;
           text-align: center;
-          background: #2c3e50;
-          color: #ffffff;
-          font-size: 15px;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-          transition: background-color 0.3s ease;
         }
+        .channel-code {
+          font-size: 14px;
+          color: #666;
+          text-align: center;
+        }
+        .channel-desc {
+          font-size: 14px;
+          color: #666;
+          text-align: center;
+        }
+        .channel-tags {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          margin-top: 10px;
+          .el-tag {
+            margin: 5px;
+            font-size: 12px;
+          }
+        }
+      }
+    }
 
-        &:hover .theme-name {
-          background: #34495e;
+    .settings-list {
+      margin-top: 20px;
+
+      .el-collapse {
+        border: none;
+
+        .el-collapse-item {
+          margin-bottom: 10px;
+
+          .el-collapse-item__header {
+            font-size: 16px;
+            color: #333;
+            padding: 0 15px;
+          }
+
+          .el-collapse-item__content {
+            padding: 15px;
+          }
+        }
+      }
+
+      .about-content {
+        p {
+          margin: 10px 0;
+          color: #666;
+
+          a {
+            color: #f59712;
+            text-decoration: none;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          }
         }
       }
     }
   }
-  .el-overlay {
-    pointer-events: none;
-  }
-  .dev-dialog {
-    background: rgba(0, 0, 0, 0.5);
-    pointer-events: auto;
 
-    header {
-      display: none;
-    }
-    .dev-container {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
+  .theme-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    padding: 10px;
+
+    .theme-item {
+      cursor: pointer;
+      border-radius: 8px;
       overflow: hidden;
-      position: relative;
-      padding-top: 40px;
-      backdrop-filter: blur(10px);
-      opacity: 0.5;
-      .dev-header {
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 90;
-        width: calc(100% - 40px);
-        padding: 5px 20px !important;
-        transition: opacity 0.3s ease;
-        .run {
-          cursor: pointer;
-          font-size: 16px;
-          margin-left: 10px;
-        }
-        .header-close {
-          position: absolute;
-          right: 0;
-          top: 0px;
-          cursor: pointer;
+      border: 2px solid transparent;
+
+      &.active {
+        border-color: #f59712;
+      }
+
+      .theme-preview {
+        height: 80px;
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
       }
-      .editor-container {
-        flex: 1;
-        height: 80%;
-        // border: 1px solid #dcdfe6;
-        // border-radius: 4px;
-        overflow: hidden;
 
-        .monaco-editor {
-          height: 100%;
-          min-height: 400px;
-        }
+      .theme-name {
+        padding: 8px;
+        text-align: center;
+        font-size: 12px;
+        background: #f5f5f5;
       }
     }
+  }
+
+  .channel-code-tip {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
   }
 }
 </style>

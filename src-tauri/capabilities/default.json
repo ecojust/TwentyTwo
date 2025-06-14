@@ -20,6 +20,7 @@
     "fs:allow-appdata-write-recursive",
     "fs:allow-appdata-read",
     "fs:allow-appdata-write",
+    "http:default",
     {
       "identifier": "opener:allow-open-path",
       "allow": [
@@ -28,6 +29,14 @@
         },
         {
           "path": "http://**"
+        }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "http://111.229.154.132:5555/*"
         }
       ]
     }

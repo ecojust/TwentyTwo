@@ -14,6 +14,61 @@ export default class Generater {
     return positiveHash;
   }
 
+  // 加密频道信息
+  static encryptChannel(uuid: string, sign: string): string {
+    try {
+      const channelInfo = {
+        uuid: uuid,
+        sign: sign,
+        timestamp: new Date().getTime(),
+      };
+      const jsonString = JSON.stringify(channelInfo);
+      const base64Encoded = btoa(jsonString);
+      const reversed = base64Encoded.split("").reverse().join("");
+      const encrypted = `vsch_${reversed}`;
+      return encrypted;
+    } catch (error) {
+      console.error("频道信息加密失败:", error);
+      return "";
+    }
+  }
+
+  // 解密频道信息
+  static decryptChannel(
+    encryptedString: string
+  ): { uuid: string; sign: string; timestamp: string } | null {
+    try {
+      // 检查前缀是否正确
+      if (!encryptedString.startsWith("vsch_")) {
+        throw new Error("无效的加密字符串格式");
+      }
+
+      // 移除前缀并反转字符串
+      const reversed = encryptedString.substring(5);
+      const base64Encoded = reversed.split("").reverse().join("");
+
+      // Base64解码
+      const jsonString = atob(base64Encoded);
+
+      // 解析JSON
+      const channelInfo = JSON.parse(jsonString);
+
+      // 验证对象结构
+      if (!channelInfo.uuid || !channelInfo.sign) {
+        throw new Error("解密后的数据格式不正确");
+      }
+
+      return {
+        uuid: channelInfo.uuid,
+        sign: channelInfo.sign,
+        timestamp: channelInfo.timestamp,
+      };
+    } catch (error) {
+      console.error("频道信息解密失败:", error);
+      return null;
+    }
+  }
+
   // 生成缩略图云
   static async generateThumbnailCloud(thumbnails: string[]): Promise<string> {
     try {

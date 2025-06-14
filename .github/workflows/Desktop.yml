@@ -1,7 +1,7 @@
 name: Desktop
 on:
   push:
-    branches: [master]
+    branches: [v2]
   workflow_dispatch:
 
 concurrency:

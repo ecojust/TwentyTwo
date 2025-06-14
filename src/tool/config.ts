@@ -14,10 +14,19 @@ export default class Config {
       JSON.stringify({
         theme: "Default",
         active_plugin: "",
+        channel: "",
       })
     );
     if (res?.success) {
       return JSON.parse(res.data);
+    }
+  }
+
+  static async setChannel(channel: string) {
+    const res = await this.getConfiguration();
+    if (res) {
+      res.channel = channel;
+      return this.setConfiguration(res);
     }
   }
 
