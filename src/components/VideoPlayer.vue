@@ -425,28 +425,6 @@ const handleDeleteVideo = async (video, index) => {
     pointer-events: none;
     color: #c1c1c1;
 
-    &.controls-hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-    .player-header-close {
-      pointer-events: all;
-    }
-
-    .tv-style-title {
-      display: inline-block;
-      font-size: 18px;
-      font-weight: 500;
-      color: #ffffff;
-      background-color: rgba(0, 0, 0, 0.5);
-      padding: 6px 12px;
-      border-radius: 4px;
-      margin-right: 10px;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-      letter-spacing: 1px;
-      backdrop-filter: blur(2px);
-      border-left: 3px solid #409eff;
-    }
     .label {
       padding: 4px 8px;
       border-radius: 4px;
@@ -491,7 +469,23 @@ const handleDeleteVideo = async (video, index) => {
         }
       }
     }
+
+    .tv-style-title {
+      display: inline-block;
+      font-size: 18px;
+      font-weight: 500;
+      color: #ffffff;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 6px 12px;
+      border-radius: 4px;
+      margin-right: 10px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      letter-spacing: 1px;
+      backdrop-filter: blur(2px);
+      border-left: 3px solid #409eff;
+    }
     .player-header-close {
+      pointer-events: all;
       position: absolute;
       top: 20px;
       right: 20px;
@@ -512,6 +506,17 @@ const handleDeleteVideo = async (video, index) => {
         .el-icon {
           transform: scale(1.1);
         }
+      }
+    }
+
+    &.controls-hidden {
+      > * {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .tv-style-title {
+        opacity: 1 !important;
       }
     }
   }
