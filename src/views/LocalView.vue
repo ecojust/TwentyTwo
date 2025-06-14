@@ -1212,7 +1212,7 @@ onMounted(async () => {
       width: 320px;
     }
     .type {
-      width: 120px;
+      width: 150px;
     }
     .operation {
       width: 100px;
