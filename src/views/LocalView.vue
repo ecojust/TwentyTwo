@@ -1,6 +1,13 @@
 <template>
   <div class="local-view">
-    <el-card>
+    <el-empty
+      v-if="!currentChannel"
+      description="请先加入频道"
+      :image-size="200"
+      style="margin-top: 80px"
+    ></el-empty>
+
+    <el-card v-else>
       <template #header>
         <div class="view-header">
           <h2>频道资源</h2>
@@ -671,11 +678,15 @@ async function saveCollection() {
   isadding.value = false;
 }
 
+const currentChannel = ref("");
+
 const getChannelCollections = async (channelId) => {
   if (!channelId) {
     const config = await Config.getConfiguration();
     channelId = config.channel;
   }
+
+  currentChannel.value = channelId;
   const res = await Channel.getChannelCollections(channelId);
   if (res) {
     collection.value = res;
@@ -708,7 +719,14 @@ onMounted(async () => {
 
 <style lang="less">
 .local-view {
-  background: red !important;
+  .el-empty {
+    .el-empty__description {
+      p {
+        color: #4466ff;
+        font-weight: 900;
+      }
+    }
+  }
   @keyframes gzh-animate {
     0% {
       transform: rotateZ(0deg);
