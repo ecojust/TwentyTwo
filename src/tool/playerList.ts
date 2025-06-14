@@ -20,10 +20,14 @@ export default class PlayerList {
     }
   }
 
-  static async pushVideo(video: any) {
+  static async pushVideo(video: any, clear: boolean = false) {
     const res = await this.getConfiguration();
     console.log("添加到列表", video, res.videoList);
     const toadd = [];
+
+    if (clear) {
+      res.videoList = [];
+    }
 
     if (video instanceof Array) {
       toadd.push(...video);

@@ -59,7 +59,7 @@
           >
             <el-card>
               <div class="message-title">{{ item.title }}</div>
-              <p>{{ item.description }}</p>
+              <p class="message-content">{{ item.description }}</p>
             </el-card>
           </el-timeline-item>
         </el-timeline>
@@ -229,6 +229,9 @@ onMounted(async () => {
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 8px;
+  }
+  .message-content {
+    width: auto;
   }
 }
 </style>

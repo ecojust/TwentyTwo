@@ -12,18 +12,29 @@
           description="您还未加入任何频道，点击此处加入频道吧"
         ></el-empty>
       </div>
-      <div v-else class="channel-info-section">
-        <div class="channel-info" @click="showAddChannelDialog = true">
+      <div
+        v-else
+        class="channel-info-section"
+        @click="showAddChannelDialog = true"
+      >
+        <div class="channel-info">
           <!-- 使用 Flexbox 布局 -->
           <div class="channel-thumb">
-            <img :src="channelDetail.thumb" alt="频道缩略图" />
+            <img
+              v-if="channelDetail.thumb"
+              :src="channelDetail.thumb"
+              alt="频道缩略图"
+            />
+            <img v-else src="/logo.png" alt="频道缩略图" />
           </div>
           <div class="channel-details">
             <div class="channel-name">{{ channelDetail.title }}</div>
+            <div class="channel-code">成员数：{{ channelDetail.users }}</div>
+
             <div class="channel-code">频道码: {{ channelDetail.code }}</div>
             <div class="channel-desc">{{ channelDetail.description }}</div>
 
-            <div class="channel-tags">
+            <div class="channel-tags" v-if="channelDetail.keywords">
               <el-tag
                 v-for="keyword in channelDetail.keywords.split(',')"
                 :key="keyword"
@@ -32,6 +43,12 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="create-channel">
+        <el-button type="primary" @click="createChannel">
+          创建我的频道</el-button
+        >
       </div>
 
       <!-- 设置入口列表 -->
@@ -98,20 +115,76 @@
         </span>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="showCreateChannelDialog"
+      title="创建频道"
+      width="500px"
+      destroy-on-close
+      class="channel-dialog"
+    >
+      <div class="channel-code-section">
+        <div class="channel-code-input">
+          <el-form label-width="120px">
+            <el-form-item label="频道名称" required>
+              <el-input
+                :prefix-icon="Guide"
+                placeholder="请输入频道名称(用于显示的名称)"
+                v-model="newChannelName"
+                clearable
+              >
+              </el-input>
+            </el-form-item>
+            <el-form-item label="频道描述">
+              <el-input
+                type="textarea"
+                :rows="2"
+                placeholder="请输入频道描述"
+                v-model="newChannelDescription"
+                clearable
+              >
+              </el-input>
+            </el-form-item>
+
+            <el-form-item label="频道码(自动生成)">
+              <el-input
+                disabled
+                :prefix-icon="StarFilled"
+                v-model="newChannelEncode"
+                clearable
+              >
+              </el-input>
+            </el-form-item>
+          </el-form>
+
+          <!-- <div class="channel-code-tip">联系管理员获取频道码</div> -->
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showCreateChannelDialog = false">取消</el-button>
+          <el-button type="primary" @click="requestCreateChannel"
+            >确定</el-button
+          >
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { Key } from "@element-plus/icons-vue";
+import { Key, Guide, StarFilled } from "@element-plus/icons-vue";
 import { SYSTEM_THEMES } from "../const/const";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { getVersion } from "@tauri-apps/api/app";
 import { ElMessage } from "element-plus";
 import Channel from "../api/channel";
 import Config from "../tool/config";
-
+import Generater from "../tool/generater";
 const appVersion = ref("加载中...");
+import { v4 as uuidv4 } from "uuid";
 const channelDetail = ref(null);
 
 const encodeChannel = ref(""); // 初始化为空字符串
@@ -119,6 +192,8 @@ const currentTheme = ref("default");
 
 // 频道相关数据
 const showAddChannelDialog = ref(false);
+
+const showCreateChannelDialog = ref(false);
 
 const goto = (url) => {
   openPath(url).catch((err) => {
@@ -130,6 +205,29 @@ const changeTheme = async (theme) => {
   currentTheme.value = theme;
   await Config.setTheme(theme);
   await Config.applyTheme();
+};
+
+const newChannelEncode = ref("");
+const newChannelName = ref("");
+const newChannelDescription = ref("");
+
+const createChannel = async () => {
+  newChannelEncode.value = Generater.encryptChannel(uuidv4(), "fromClient");
+  showCreateChannelDialog.value = true;
+};
+
+const requestCreateChannel = async () => {
+  const encodechannel = await Channel.createChannel(
+    newChannelEncode.value,
+    newChannelName.value,
+    newChannelDescription.value
+  );
+
+  if (encodechannel) {
+    await Config.setChannel(encodechannel);
+    await getChannelDetail(encodechannel, true);
+  }
+  showCreateChannelDialog.value = false;
 };
 
 const saveChannel = async () => {
@@ -198,6 +296,9 @@ onMounted(async () => {
       &:hover {
         background: #f5f7fa;
       }
+    }
+    .create-channel {
+      text-align: center;
     }
 
     .channel-info-section {

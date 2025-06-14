@@ -15,25 +15,17 @@ export default class Generater {
   }
 
   // 加密频道信息
-  static encryptChannel(channelName: string, channelId: string): string {
+  static encryptChannel(uuid: string, sign: string): string {
     try {
-      // 创建一个包含频道名称和ID的对象
       const channelInfo = {
-        name: channelName,
-        id: channelId,
+        uuid: uuid,
+        sign: sign,
         timestamp: new Date().getTime(),
       };
-
-      // 将对象转换为JSON字符串
       const jsonString = JSON.stringify(channelInfo);
-
-      // 使用Base64编码
       const base64Encoded = btoa(jsonString);
-
-      // 简单的混淆处理，将Base64字符串反转并添加一个特定前缀
       const reversed = base64Encoded.split("").reverse().join("");
       const encrypted = `vsch_${reversed}`;
-
       return encrypted;
     } catch (error) {
       console.error("频道信息加密失败:", error);
@@ -44,7 +36,7 @@ export default class Generater {
   // 解密频道信息
   static decryptChannel(
     encryptedString: string
-  ): { name: string; id: string; timestamp: string } | null {
+  ): { uuid: string; sign: string; timestamp: string } | null {
     try {
       // 检查前缀是否正确
       if (!encryptedString.startsWith("vsch_")) {
@@ -62,13 +54,13 @@ export default class Generater {
       const channelInfo = JSON.parse(jsonString);
 
       // 验证对象结构
-      if (!channelInfo.name || !channelInfo.id) {
+      if (!channelInfo.uuid || !channelInfo.sign) {
         throw new Error("解密后的数据格式不正确");
       }
 
       return {
-        name: channelInfo.name,
-        id: channelInfo.id,
+        uuid: channelInfo.uuid,
+        sign: channelInfo.sign,
         timestamp: channelInfo.timestamp,
       };
     } catch (error) {

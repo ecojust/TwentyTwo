@@ -5,6 +5,25 @@ import { ElMessage } from "element-plus";
 // import { get } from "./axios";
 
 export default class Channel {
+  static async createChannel(
+    encodechannel: string,
+    name: string,
+
+    description: string
+  ) {
+    const res = await Fetch.post(`createChannel`, {
+      channel: encodechannel,
+      name: name,
+      description: description,
+    });
+    if (res.code === 200) {
+      ElMessage.success(res.msg);
+      return res.data.data;
+    } else {
+      ElMessage.warning(res.msg);
+      return false;
+    }
+  }
   static async pushwork(channel: string, data: any) {
     if (!channel) {
       return null;
@@ -14,6 +33,7 @@ export default class Channel {
       ElMessage.success(res.msg);
       return true;
     } else {
+      ElMessage.warning(res.msg);
       return false;
     }
   }
