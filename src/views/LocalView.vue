@@ -246,7 +246,7 @@
                 <div class="title">资源标题</div>
                 <div class="origin">源网站地址</div>
                 <div class="real">视频源地址提取</div>
-                <div class="type">视频源类型</div>
+                <div class="type">视频源类型(可不选)</div>
                 <div class="operation">操作</div>
               </div>
 
